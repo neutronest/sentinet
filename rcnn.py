@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
-
+import pdb
 import theano
 import theano.tensor as T
 import numpy as np
+import sys
+import logging
 
 
-from vectorize import Vectorize
 import data_process
 import rnn
 import cnn
-import pdb
-import logging
-import sys
-
+import utils
 
 class RCNN(object):
 
@@ -47,7 +45,6 @@ class RCNN(object):
         self.loss = self.rnn.loss
         self.error = self.rnn.error
         return
-
 
 def start_rcnn(dim,
                n_feature_maps,
@@ -111,8 +108,8 @@ def start_rcnn(dim,
     while epoch < n_epochs:
         epoch += 1
         for idx in xrange(n_train):
-            train_model(train_x[idx],
-                        train_y[idx],
+            train_model(utils.wrap_x(train_x[idx]),
+                        utils.wrap_y(train_y[idx]),
                         learning_rate)
 
             valid_iter = (epoch-1) * n_train + idx + 1
@@ -121,8 +118,10 @@ def start_rcnn(dim,
                 error_cnt = 0
                 cost_cnt = 0
                 for vdx in xrange(n_valid):
-                    valid_cost = compute_loss(valid_x[vdx], valid_y[vdx])
-                    valid_error = compute_error(valid_x[vdx], valid_y[vdx])
+                    valid_cost = compute_loss(utils.wrap_x(valid_x[vdx]),
+                                              utils.wrap_y(valid_y[vdx]))
+                    valid_error = compute_error(utils.wrap_x(valid_x[vdx]),
+                                                utils.wrap_y(valid_y[vdx]))
                     cost_cnt += valid_cost
                     error_cnt += valid_error
 
