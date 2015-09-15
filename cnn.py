@@ -71,6 +71,6 @@ class CNN(object):
 
         [self.output], _ = theano.scan(_conv,
                                        sequences=self.input_data,
-                                       outputs_info=[None])
+                                       outputs_info=[])
 
         return
