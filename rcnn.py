@@ -35,15 +35,15 @@ class RCNN(object):
                            n_input = n_feature_maps*len(window_sizes),
                            n_hidden=n_hidden,
                            n_output=n_out,
-                           activation=T.nnet.sigmoid)
+                           activation=T.nnet.sigmoid,
+                           output_type="softmax")
 
-        self.h = self.rnn.h
         self.window_sizes = window_sizes
         self.dim = dim
         self.n_out = n_out
         self.n_hidden = self.rnn.n_hidden
         self.params = self.cnn.params + self.rnn.params
-        self.output = self.rnn.output
+        self.output = self.rnn.output_var
         self.loss = self.rnn.loss
         self.error = self.rnn.error
         return
@@ -69,8 +69,8 @@ def start_rcnn(dim,
     logging.info("learning_rate: %f, learning_rate_decay: %f, validation_frequency: %d" % (learning_rate, learning_rate_decay, validation_frequency))
 
     logging.info("initialize")
-    x_var = T.ftensor3('x_var')
-    y_var = T.vector('y_var')
+    x_var = T.dtensor3('x_var')
+    y_var = T.ivector('y_var')
     lr_var = T.scalar("lr_var")
     label_var = T.vector('label_var')
     rcnn = RCNN(rng=np.random.RandomState(54321),

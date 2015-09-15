@@ -31,7 +31,7 @@ class RNN(object):
         self.input_data = input_data
         self.activation = activation
         self.output_type = output_type
-
+        self.n_hidden = n_hidden
 
         # recurrent weights as a shared variable
         W_init = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
@@ -65,36 +65,40 @@ class RNN(object):
         # for every parameter, we maintain it's last update
         # the idea here is to use "momentum"
         # keep moving mostly in the same direction
-        def recurrent(h_previous, x_t):
+        def step(x_t, h_previous):
             """
 
             """
-            if self.activation == "sigmoid":
-                h_t = T.nnet.sigmoid(T.dot(x_t, self.W_in) + T.dot(h_previous, self.W) + self.bh)
+
+            h_t = T.nnet.sigmoid(T.dot(x_t, self.W_in) + T.dot(h_previous, self.W) + self.bh)
 
             y_t = T.dot(h_t, self.W_out) + self.by
 
             # dropout layer
+            """
             if if_dropout:
                 srng = T.shared_randomstreams.RandomStreams(rng.randint(999999))
                 mask = srng.binomial(n=1,
                                      p=0.5,
                                      size=y_t.shape)
                 y_t = y_t * T.cast(mask, theano.config.floatX)
-            return [h_t, y_t]
+            """
+            return h_t, y_t
 
-        [self.h_var, self.y_pred_var], _ = theano.scan(recurrent,
+        [self.h_var, self.y_pred_var], _ = theano.scan(step,
                                                        sequences=self.input_data,
                                                        outputs_info=[self.h0, None])
 
 
         if self.output_type == "softmax":
             self.p_y_given_x_var = T.nnet.softmax(self.y_pred_var)
-            self.y_out_var = T.argmax(self.p_y_given_x_var, axis=1)
-            self.loss_var = lambda y: self.nll_multiclass(y)
+            self.output_var = T.argmax(self.p_y_given_x_var, axis=1)
+            self.loss = self.nll_multiclass # point-free oh~yeah
+        pdb.set_trace()
+        ## ==== end function ===
 
     def nll_multiclass(self, y):
-        return -T.mean(T.log(self.p_y_given_x_var)[T.arange(self.p_y_given_x_var, y)])
+        return -T.mean(T.log(self.p_y_given_x_var)[T.arange(y.shape[0]), y])
 
     def error(self, label):
         """
@@ -102,4 +106,4 @@ class RNN(object):
         label: the real category of data
                type: list(int)
         """
-        return T.mean(T.neq(self.y_out_var, label))
+        return T.mean(T.neq(self.output_var, label))

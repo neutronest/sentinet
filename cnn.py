@@ -1,5 +1,5 @@
 ## -*- coding: utf-8 -*-
-
+import pdb
 import theano
 import theano.tensor as T
 from theano.tensor.nnet import conv
@@ -50,7 +50,7 @@ class CNN(object):
                                 dtype=theano.config.floatX)
             W = theano.shared(value=W_init, name="W")
             self.W_list.append(W)
-            self.params.append(W)
+        self.params += self.W_list
         b_init = np.asarray(np.zeros((self.n_feature_maps * len(self.window_sizes),), dtype=theano.config.floatX))
         self.b = theano.shared(value=b_init)
         self.params.append(self.b)
@@ -61,16 +61,17 @@ class CNN(object):
             h = None
 
             for i in xrange(len(window_sizes)):
-                ws = window_sizes[i]
                 conv_out = conv.conv2d(input=word_matrix, filters=self.W_list[i])
                 max_out = T.max(conv_out, axis=2).flatten()
                 h = max_out if h == None else \
                          T.concatenate([h, max_out])
-                o = h + self.b
-                return o
+            o = h + self.b
+            return o
 
-        [self.output], _ = theano.scan(_conv,
-                                       sequences=self.input_data,
-                                       outputs_info=[])
 
+        self.output, _ = theano.scan(fn=_conv,
+                                       sequences=[self.input_data],
+                                       n_steps=self.input_data.shape[0],
+                                       outputs_info=None)
+        #pdb.set_trace()
         return
