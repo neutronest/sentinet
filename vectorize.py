@@ -62,7 +62,7 @@ class Vectorize(object):
         None
 
         """
-        self.google_modopel = Word2Vec.load_word2vec_format(google_file, binary=True)
+        self.google_model = Word2Vec.load_word2vec_format(google_file, binary=True)
         return
 
     def get_google_vector(self, word):

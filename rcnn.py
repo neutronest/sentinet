@@ -91,10 +91,7 @@ def start_rcnn(dim,
     compute_loss = theano.function(inputs=[x_var, y_var],
                                    outputs=[cost])
     compute_error = theano.function(inputs=[x_var, label_var],
-                                    outputs=[error],
-                                    givens={
-
-                                    })
+                                    outputs=[error])
 
     logging.info("begin to train")
     # load the dataset
