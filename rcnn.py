@@ -23,9 +23,7 @@ class RCNN(object):
                  n_feature_maps,
                  window_sizes,
                  n_hidden,
-                 n_out,
-                 learning_rate,
-                 learning_rate_decay
+                 n_out
                 ):
         self.cnn = cnn.CNN(input_data=input_data,
                            rng=rng,
@@ -33,7 +31,7 @@ class RCNN(object):
                            n_feature_maps=n_feature_maps,
                            window_sizes=window_sizes)
         self.rnn = rnn.RNN(input_data=self.cnn.output,
-                           #rng=rng,
+                           rng=rng,
                            n_input = n_feature_maps*len(window_sizes),
                            n_hidden=n_hidden,
                            n_output=n_out,
@@ -74,7 +72,8 @@ def start_rcnn(dim,
     x_var = T.ftensor3('x_var')
     y_var = T.vector('y_var')
     lr_var = T.vscalar("lr_var")
-    rcnn = RCNN(rng=rng,
+    label_var = T.vector('label_var')
+    rcnn = RCNN(rng=np.random.RandomState(54321),
                 input_data=x_var,
                 dim=dim,
                 n_feature_maps=n_feature_maps,
@@ -113,8 +112,8 @@ def start_rcnn(dim,
                         train_y[idx],
                         learning_rate)
 
-            iter = (epoch-1) * n_train + idx + 1
-            if iter % validation_frequency == 0:
+            valid_iter = (epoch-1) * n_train + idx + 1
+            if valid_iter % validation_frequency == 0:
 
                 error_cnt = 0
                 cost_cnt = 0
@@ -138,7 +137,7 @@ if __name__ == "__main__":
     logging.basicConfig(
         level=logging.DEBUG, format='[%(asctime)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S', filename=log_file, filemode='w')
-    start_rnn(dim=300,
+    start_rcnn(dim=300,
               n_feature_maps=300,
               window_sizes=(2, 3,4 , 5),
               n_hidden=300,

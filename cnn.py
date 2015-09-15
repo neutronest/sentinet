@@ -58,16 +58,16 @@ class CNN(object):
 
         def _conv(word_vector):
             word_matrix = word_vector.dimshuffle('x', 'x', 0, 1)
-            self.h = None
+            h = None
 
             for i in xrange(len(window_sizes)):
                 ws = window_sizes[i]
                 conv_out = conv.conv2d(input=word_matrix, filters=self.W_list[i])
                 max_out = T.max(conv_out, axis=2).flatten()
-                self.h = max_out if self.h == None else \
-                         T.concatenate([self.h, max_out])
-                self.o = self.h + self.b
-                return self.o
+                h = max_out if h == None else \
+                         T.concatenate([h, max_out])
+                o = h + self.b
+                return o
 
         [self.output], _ = theano.scan(_conv,
                                        sequences=self.input_data,

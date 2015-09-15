@@ -10,14 +10,15 @@ class RNN(object):
     the basic recurrent neural network
     """
 
-    def __init__(self, input_data,
+    def __init__(self,
+                 rng,
+                 input_data,
                  n_input,
                  n_hidden,
                  n_output,
                  activation="sigmoid",
                  output_type="softmax",
-                 learning_rate=0.01,
-                 learning_rate_decay=0.99):
+                 if_dropout=True):
         """
         the rnn init function
 
@@ -55,7 +56,7 @@ class RNN(object):
         bh_init = np.zeros((n_hidden,), dtype=theano.config.floatX)
         self.bh = theano.shared(value=bh_init, name='bh')
 
-        by_init = np.zeros((n_out,), dtype=theano.config.floatX)
+        by_init = np.zeros((n_output,), dtype=theano.config.floatX)
         self.by = theano.shared(value=by_init, name='by')
 
         self.params = [self.W, self.W_in, self.W_out, self.h0,
@@ -64,10 +65,6 @@ class RNN(object):
         # for every parameter, we maintain it's last update
         # the idea here is to use "momentum"
         # keep moving mostly in the same direction
-
-        x_var = T.matrix()
-        y_var = T.vector()
-
         def recurrent(h_previous, x_t):
             """
 
@@ -78,7 +75,7 @@ class RNN(object):
             y_t = T.dot(h_t, self.W_out) + self.by
 
             # dropout layer
-            if dropout == True:
+            if if_dropout:
                 srng = T.shared_randomstreams.RandomStreams(rng.randint(999999))
                 mask = srng.binomial(n=1,
                                      p=0.5,
