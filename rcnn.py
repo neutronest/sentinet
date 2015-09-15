@@ -93,7 +93,7 @@ def start_rcnn(dim,
                                   updates=sgd_updates)
     compute_loss = theano.function(inputs=[x_var, y_var],
                                    outputs=[cost])
-    compute_error = theano.function(inputs=[x_var, y_var],
+    compute_error = theano.function(inputs=[x_var],
                                     outputs=[error])
 
     logging.info("begin to train")

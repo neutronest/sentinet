@@ -94,7 +94,7 @@ class RNN(object):
             self.p_y_given_x_var = T.nnet.softmax(self.y_pred_var)
             self.output_var = T.argmax(self.p_y_given_x_var, axis=1)
             self.loss = self.nll_multiclass # point-free oh~yeah
-        pdb.set_trace()
+
         ## ==== end function ===
 
     def nll_multiclass(self, y):
