@@ -111,7 +111,7 @@ def start_rcnn(dim,
         logging.info("the size of batch is %i"%(batch_size))
         batch_start = random.randint(0, 990)
         batch_stop = batch_start + (batch_size+1)
-        logging.info("the batch is from %i to %i" %(batch_start, batch_stop))
+        logging.info("the batch is from %i to %i" %(batch_start, batch_stop-1))
 
         train_loss = 0
         for idx in xrange(batch_start, batch_stop):
@@ -121,6 +121,8 @@ def start_rcnn(dim,
 
             train_loss_list = compute_loss(utils.wrap_x(train_x[idx]),
                                            utils.wrap_y(train_y[idx]))
+
+            logging.info("train loss: %f" % (sum(train_loss_list) * 1.0 / len(train_x[idx])))
             train_loss += (sum(train_loss_list) * 1.0 / len(train_x[idx]))
         logging.info("the epoch %i's training loss: %f" %(epoch, train_loss))
 
