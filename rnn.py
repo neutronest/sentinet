@@ -21,7 +21,6 @@ class RNN(object):
                  if_dropout=True):
         """
         the rnn init function
-
         Parameters:
         -----------
 
@@ -107,3 +106,40 @@ class RNN(object):
                type: list(int)
         """
         return T.mean(T.neq(self.output_var, label))
+
+
+
+class RNN_LSTM(RNN):
+    """
+    the recurrent neural network with LSTM
+    """
+    def W_init(n_row, n_col, w_name):
+        """
+        """
+        W = np.asarray(np.random.uniform(size=(n_row, n_col),
+                                         low=-.01,
+                                         high=.01),
+                       dtype=theano.config.floatX)
+        return theano.shared(value=W, name=w_name)
+
+    def bias_init(n_len, b_name):
+        """
+        """
+        b = np.zeros((n_len,), dtype=theano.config.floatX)
+        return theano.shared(value=b, name=b_name)
+
+    def __init__(self,
+                 rng,
+                 input_data,
+                 n_input,
+                 n_hidden,
+                 n_output,
+                 activation="sigmoid",
+                 output_type="softmax",
+                 if_dropout=True):
+
+        super(LSTM, self).__init__()
+        # weights of LSTM
+        self.W_i = self.W_init(n_input, n_hidden)
+        self.U_i = self.W_init(n_hidden, n_hidden)
+        self.b_i = self.b_init(n_hidden)

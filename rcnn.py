@@ -5,7 +5,7 @@ import theano.tensor as T
 import numpy as np
 import sys
 import logging
-
+import random
 
 import data_process
 import rnn
@@ -54,7 +54,8 @@ def start_rcnn(dim,
                learning_rate=0.01,
                learning_rate_decay=0.1,
                n_epochs=1,
-               validation_frequency=1000):
+               validation_frequency=1000,
+               batch_size=10):
 
 
     # log the params
@@ -104,36 +105,42 @@ def start_rcnn(dim,
 
     while epoch < n_epochs:
         epoch += 1
-        for idx in xrange(n_train):
+
+        print "begin mini_batch"
+        logging.info("prepare the %i's mini batch"%(epoch))
+        logging.info("the size of batch is %i"%(batch_size))
+        batch_start = random.randint(0, 990)
+        batch_stop = batch_start + (batch_size+1)
+        logging.info("the batch is from %i to %i" %(batch_start, batch_stop))
+
+        train_loss = 0
+        for idx in xrange(batch_start, batch_stop):
             train_model(utils.wrap_x(train_x[idx]),
                         utils.wrap_y(train_y[idx]),
                         learning_rate)
 
             train_loss_list = compute_loss(utils.wrap_x(train_x[idx]),
-                                      utils.wrap_y(train_y[idx]))
-            train_loss = sum(train_loss_list) * 1.0 / len(train_x[idx])
-            logging.info("training loss: %f" %(train_loss))
+                                           utils.wrap_y(train_y[idx]))
+            train_loss += (sum(train_loss_list) * 1.0 / len(train_x[idx]))
+        logging.info("the epoch %i's training loss: %f" %(epoch, train_loss))
 
-            valid_iter = (epoch-1) * n_train + idx + 1
-            if valid_iter % validation_frequency == 0:
+        error_cnt = 0
+        cost_cnt = 0
+        for vdx in xrange(n_valid):
+            valid_cost_list = compute_loss(utils.wrap_x(valid_x[vdx]),
+                                           utils.wrap_y(valid_y[vdx]))
+            valid_error_list = compute_error(utils.wrap_x(valid_x[vdx]),
+                                                         utils.wrap_y(valid_y[vdx]))
 
-                error_cnt = 0
-                cost_cnt = 0
-                for vdx in xrange(n_valid):
-                    valid_cost_list = compute_loss(utils.wrap_x(valid_x[vdx]),
-                                              utils.wrap_y(valid_y[vdx]))
-                    valid_error_list = compute_error(utils.wrap_x(valid_x[vdx]),
-                                                utils.wrap_y(valid_y[vdx]))
+            logging.info("valid loss: %f"%(sum(valid_cost_list)))
+            cost_cnt += (sum(valid_cost_list) * 1.0 / len(valid_x[vdx]))
+            error_cnt += (sum(valid_error_list) * 1.0 / len(valid_x[vdx]))
 
-                    logging.info("valid loss: %f"%(sum(valid_cost_list)))
-                    cost_cnt += sum(valid_cost_list)
-                    error_cnt += sum(valid_error_list)
-
-                # valid cost and error stats
-                error_cnt = error_cnt * 1.0 / n_valid
-                cost_cnt = cost_cnt * 1.0 / n_valid
-                logging.info("Epoch %d, seq %i/%i, error_cnt: %f, cost_cnt: %f" \
-                             %(epoch, idx, n_train, error_cnt, cost_cnt))
+            # valid cost and error stats
+        error_cnt = error_cnt * 1.0 / n_valid
+        cost_cnt = cost_cnt * 1.0 / n_valid
+        logging.info("Epoch %d, seq %i/%i, error_cnt: %f, cost_cnt: %f" \
+                     %(epoch, idx, n_train, error_cnt, cost_cnt))
 
         learning_rate = learning_rate * (1-learning_rate_decay)
 
@@ -144,7 +151,8 @@ if __name__ == "__main__":
         level=logging.DEBUG, format='[%(asctime)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S', filename=log_file, filemode='w')
     start_rcnn(dim=300,
-              n_feature_maps=300,
-              window_sizes=(2, 3,4 , 5),
-              n_hidden=300,
-              n_out=43)
+               n_feature_maps=300,
+               window_sizes=(2, 3,4 , 5),
+               n_hidden=300,
+               n_out=43,
+               batch_size=10)
