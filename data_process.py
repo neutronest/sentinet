@@ -129,7 +129,7 @@ def load_utterance_dataset():
     """
     data_x, data_y = gen_structured_xy(thread_data)
     TRAIN_SET = 1000
-    VALID_SET = 1110
+    VALID_SET = 1010
     train_x = data_x[:TRAIN_SET]
     train_y = data_y[:TRAIN_SET]
     valid_x = data_x[TRAIN_SET:VALID_SET]
