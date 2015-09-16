@@ -108,6 +108,9 @@ def start_rcnn(dim,
             train_model(utils.wrap_x(train_x[idx]),
                         utils.wrap_y(train_y[idx]),
                         learning_rate)
+            train_loss = compute_loss(utils.wrap_x(train_x[idx]),
+                                      utils.wrap_y(train_y[idx]))
+            logging.info("training loss: %f" %(train_loss))
 
             valid_iter = (epoch-1) * n_train + idx + 1
             if valid_iter % validation_frequency == 0:
