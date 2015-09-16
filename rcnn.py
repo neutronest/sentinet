@@ -108,24 +108,26 @@ def start_rcnn(dim,
             train_model(utils.wrap_x(train_x[idx]),
                         utils.wrap_y(train_y[idx]),
                         learning_rate)
-            """
+
             train_loss_list = compute_loss(utils.wrap_x(train_x[idx]),
                                       utils.wrap_y(train_y[idx]))
             train_loss = sum(train_loss_list) * 1.0 / len(train_x[idx])
             logging.info("training loss: %f" %(train_loss))
-            """
+
             valid_iter = (epoch-1) * n_train + idx + 1
             if valid_iter % validation_frequency == 0:
 
                 error_cnt = 0
                 cost_cnt = 0
                 for vdx in xrange(n_valid):
-                    valid_cost = compute_loss(utils.wrap_x(valid_x[vdx]),
+                    valid_cost_list = compute_loss(utils.wrap_x(valid_x[vdx]),
                                               utils.wrap_y(valid_y[vdx]))
-                    valid_error = compute_error(utils.wrap_x(valid_x[vdx]),
+                    valid_error_list = compute_error(utils.wrap_x(valid_x[vdx]),
                                                 utils.wrap_y(valid_y[vdx]))
-                    cost_cnt += valid_cost
-                    error_cnt += valid_error
+
+                    logging.info("valid loss: %f"%(sum(valid_cost_list)))
+                    cost_cnt += sum(valid_cost_list)
+                    error_cnt += sum(valid_error_list)
 
                 # valid cost and error stats
                 error_cnt = error_cnt * 1.0 / n_valid
