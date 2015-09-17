@@ -125,18 +125,19 @@ def start_rcnn(dim,
             logging.info("train loss: %f" % (sum(train_loss_list) * 1.0 / len(train_x[idx])))
             train_loss += (sum(train_loss_list) * 1.0 / len(train_x[idx]))
         logging.info("the epoch %i's training loss: %f" %(epoch, train_loss))
-
+        logging.info("===================================")
+        logging.info("now get into the valid process")
         error_cnt = 0
         cost_cnt = 0
         for vdx in xrange(n_valid):
             valid_cost_list = compute_loss(utils.wrap_x(valid_x[vdx]),
                                            utils.wrap_y(valid_y[vdx]))
-            valid_error_list = compute_error(utils.wrap_x(valid_x[vdx]),
+            valid_error = compute_error(utils.wrap_x(valid_x[vdx]),
                                                          utils.wrap_y(valid_y[vdx]))
 
             logging.info("valid loss: %f"%(sum(valid_cost_list)))
             cost_cnt += (sum(valid_cost_list) * 1.0 / len(valid_x[vdx]))
-            error_cnt += (sum(valid_error_list) * 1.0 / len(valid_x[vdx]))
+            error_cnt += valid_error
 
             # valid cost and error stats
         error_cnt = error_cnt * 1.0 / n_valid
@@ -157,4 +158,4 @@ if __name__ == "__main__":
                window_sizes=(2, 3,4 , 5),
                n_hidden=300,
                n_out=43,
-               batch_size=10)
+               batch_size=5)

@@ -5,6 +5,9 @@ import numpy as np
 import theano
 import theano.tensor as T
 
+
+from .utils import sharedX, uniform, shared_zero, shared_ones
+
 class RNN(object):
     """
     the basic recurrent neural network
@@ -122,11 +125,30 @@ class RNN_LSTM(RNN):
                        dtype=theano.config.floatX)
         return theano.shared(value=W, name=w_name)
 
-    def bias_init(n_len, b_name):
-        """
-        """
-        b = np.zeros((n_len,), dtype=theano.config.floatX)
-        return theano.shared(value=b, name=b_name)
+    """
+    copying from keras
+    not use keras right now.
+    """
+    def get_fans(shape):
+        fan_in = shape[0] if len(shape) == 2 else np.prod(shape[1:])
+        fan_out = shape[1] if len(shape) == 2 else shape[0]
+        return fan_in, fan_out
+
+    def glorot_uniform(shape):
+        fan_in, fan_out = get_fans(shape)
+        s = np.sqrt(6. / (fan_in + fan_out))
+        return uniform(shape, s)
+
+    def orthogonal(shape, scale=1.1):
+        ''' From Lasagne. Reference: Saxe et al., http://arxiv.org/abs/1312.6120
+        '''
+        flat_shape = (shape[0], np.prod(shape[1:]))
+        a = np.random.normal(0.0, 1.0, flat_shape)
+        u, _, v = np.linalg.svd(a, full_matrices=False)
+        # pick the one with the correct shape
+        q = u if u.shape == flat_shape else v
+        q = q.reshape(shape)
+        return sharedX(scale * q[:shape[0], :shape[1]])
 
     def __init__(self,
                  rng,
@@ -140,6 +162,18 @@ class RNN_LSTM(RNN):
 
         super(LSTM, self).__init__()
         # weights of LSTM
-        self.W_i = self.W_init(n_input, n_hidden)
-        self.U_i = self.W_init(n_hidden, n_hidden)
-        self.b_i = self.b_init(n_hidden)
+        self.W_i = self.glorot_uniform((n_input, n_hidden))
+        self.U_i = self.orthogonal((n_hidden, n_hidden))
+        self.b_i = shared_zero((n_hidden,))
+
+        self.W_f = self.glorot_uniform((n_input, n_hidden))
+        self.U_f = self.glorot_uniform((n_hidden, n_hidden))
+        self.b_f = shared_ones((n_hidden,))
+
+        self.W_c = self.glorot_uniform((n_input, n_hidden))
+        self.U_c = self.orthogonal((n_hidden, n_hidden))
+        self.b_c = shared_zero((n_hidden,))
+
+        self.W_o = self.glorot_uniform((n_input, n_hidden))
+        self.U_o = self.orthogonal((n_hidden, n_hidden))
+        self.b_o = shared_zero((n_hidden,))
