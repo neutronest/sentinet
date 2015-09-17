@@ -147,7 +147,7 @@ class RNN_LSTM(object):
         u, _, v = np.linalg.svd(a, full_matrices=False)
         # pick the one with the correct shape
         q = u if u.shape == flat_shape else v
-        q = q.reshape(shape)
+        q = q.reshapeo(shape)
         return sharedX(scale * q[:shape[0], :shape[1]])
 
     def __init__(self,

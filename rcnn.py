@@ -132,12 +132,12 @@ def start_rcnn(dim,
         for vdx in xrange(n_valid):
             valid_cost_list = compute_loss(utils.wrap_x(valid_x[vdx]),
                                            utils.wrap_y(valid_y[vdx]))
-            valid_error = compute_error(utils.wrap_x(valid_x[vdx]),
+            valid_error_list = compute_error(utils.wrap_x(valid_x[vdx]),
                                                          utils.wrap_y(valid_y[vdx]))
 
             logging.info("valid loss: %f"%(sum(valid_cost_list)))
             cost_cnt += (sum(valid_cost_list) * 1.0 / len(valid_x[vdx]))
-            error_cnt += valid_error
+            error_cnt += sum(valid_error_list)
 
             # valid cost and error stats
         error_cnt = error_cnt * 1.0 / n_valid
