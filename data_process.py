@@ -77,7 +77,7 @@ def gen_structured_data_from_utterances(filename):
     file_ob.close()
     return thread_data
 
-def load_utterance_dataset(train_size, valid_size):
+def load_utterance_dataset(train_pos, valid_pos):
     """
     """
     thread_data =  gen_structured_data_from_utterances("../data/utterances.txt")
@@ -128,8 +128,8 @@ def load_utterance_dataset(train_size, valid_size):
     return train_x, train_y, valid_x, valid_y, test_x, test_y
     """
     data_x, data_y = gen_structured_xy(thread_data)
-    TRAIN_SET = train_size
-    VALID_SET = valid_size
+    TRAIN_SET = train_pos
+    VALID_SET = valid_pos
     train_x = data_x[:TRAIN_SET]
     train_y = data_y[:TRAIN_SET]
     valid_x = data_x[TRAIN_SET:VALID_SET]
@@ -165,4 +165,4 @@ def train_sen_flatten(thread_data):
     return sens
 
 if __name__ == "__main__":
-    load_utterance_dataset()
+    load_utterance_dataset(1000, 1005)

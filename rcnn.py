@@ -56,8 +56,8 @@ def start_rcnn(dim,
                n_epochs=1,
                validation_frequency=1000,
                batch_size=10,
-               train_size=1000,
-               valid_size=1010):
+               train_pos=1000,
+               valid_pos=1010):
 
 
     # log the params
@@ -98,7 +98,7 @@ def start_rcnn(dim,
 
     logging.info("begin to train")
     # load the dataset
-    train_x, train_y, valid_x, valid_y, test_x, test_y = data_process.load_utterance_dataset()
+    train_x, train_y, valid_x, valid_y, test_x, test_y = data_process.load_utterance_dataset(train_pos, valid_pos)
 
     n_train = len(train_x)
     n_valid = len(valid_x)
@@ -164,5 +164,5 @@ if __name__ == "__main__":
                learning_rate_decay=0.99,
                batch_size=10,
                n_epochs=50,
-               train_size=1000,
-               valid_size=1006)
+               train_pos=1000,
+               valid_pos=1006)
