@@ -55,7 +55,9 @@ def start_rcnn(dim,
                learning_rate_decay=0.1,
                n_epochs=1,
                validation_frequency=1000,
-               batch_size=10):
+               batch_size=10,
+               train_size=1000,
+               valid_size=1010):
 
 
     # log the params
@@ -123,7 +125,7 @@ def start_rcnn(dim,
                                            utils.wrap_y(train_y[idx]))
 
             logging.info("train loss: %f" % (sum(train_loss_list) * 1.0 / len(train_x[idx])))
-            train_loss += (sum(train_loss_list) * 1.0 / len(train_x[idx]))
+            train_loss += sum(train_loss_list)
         logging.info("the epoch %i's training loss: %f" %(epoch, train_loss))
         logging.info("===================================")
         logging.info("now get into the valid process")
@@ -136,7 +138,7 @@ def start_rcnn(dim,
                                                          utils.wrap_y(valid_y[vdx]))
 
             logging.info("valid loss: %f"%(sum(valid_cost_list)))
-            cost_cnt += (sum(valid_cost_list) * 1.0 / len(valid_x[vdx]))
+            cost_cnt += sum(valid_cost_list)
             error_cnt += sum(valid_error_list)
 
             # valid cost and error stats
@@ -155,7 +157,12 @@ if __name__ == "__main__":
         datefmt='%Y-%m-%d %H:%M:%S', filename=log_file, filemode='w')
     start_rcnn(dim=300,
                n_feature_maps=300,
-               window_sizes=(2, 3,4 , 5),
+               window_sizes=(2, 3, 4, 5),
                n_hidden=300,
                n_out=43,
-               batch_size=5)
+               learning_rate=0.01,
+               learning_rate_decay=0.99,
+               batch_size=10,
+               n_epochs=50,
+               train_size=1000,
+               valid_size=1006)
