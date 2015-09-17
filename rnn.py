@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 
 
-from .utils import sharedX, uniform, shared_zero, shared_ones
+from utils import sharedX, uniform, shared_zero, shared_ones
 
 class RNN(object):
     """
@@ -112,11 +112,11 @@ class RNN(object):
 
 
 
-class RNN_LSTM(RNN):
+class RNN_LSTM(object):
     """
     the recurrent neural network with LSTM
     """
-    def W_init(n_row, n_col, w_name):
+    def W_init(self, n_row, n_col, w_name):
         """
         """
         W = np.asarray(np.random.uniform(size=(n_row, n_col),
@@ -129,17 +129,17 @@ class RNN_LSTM(RNN):
     copying from keras
     not use keras right now.
     """
-    def get_fans(shape):
+    def get_fans(self, shape):
         fan_in = shape[0] if len(shape) == 2 else np.prod(shape[1:])
         fan_out = shape[1] if len(shape) == 2 else shape[0]
         return fan_in, fan_out
 
-    def glorot_uniform(shape):
-        fan_in, fan_out = get_fans(shape)
+    def glorot_uniform(self, shape):
+        fan_in, fan_out = self.get_fans(shape)
         s = np.sqrt(6. / (fan_in + fan_out))
         return uniform(shape, s)
 
-    def orthogonal(shape, scale=1.1):
+    def orthogonal(self, shape, scale=1.1):
         ''' From Lasagne. Reference: Saxe et al., http://arxiv.org/abs/1312.6120
         '''
         flat_shape = (shape[0], np.prod(shape[1:]))
@@ -160,7 +160,7 @@ class RNN_LSTM(RNN):
                  output_type="softmax",
                  if_dropout=True):
 
-        super(LSTM, self).__init__()
+
         # weights of LSTM
         self.W_i = self.glorot_uniform((n_input, n_hidden))
         self.U_i = self.orthogonal((n_hidden, n_hidden))
