@@ -16,12 +16,22 @@ def wrap_y(y):
     data_y = np.asarray(y, dtype=np.int32)
     return data_y
 
-def expand_y(label, n_class, dtype=np.int32):
+def expand_y(y_seq, n_class, dtype=np.int32):
     """
+    Parameters:
+    -----------
+    y_seq: a sequences of labal
+       type: list of int
+
+    n_class: the num of classes
     """
-    label_vector = np.zeros((n_class,))
-    label_vector[label] = 1
-    return np.asarray(label_vector, dtype=dtype)
+    y_matrix = []
+    for y in y_seq:
+        y_vec = [0] * n_class
+        y_vec[y] = 1
+        y_matrix.append(y_vec)
+
+    return np.asarray(y_matrix, dtype=dtype)
 
 
 def sharedX(X, dtype=theano.config.floatX, name=None):

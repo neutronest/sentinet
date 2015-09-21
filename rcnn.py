@@ -70,7 +70,7 @@ def start_rcnn(dim,
 
     logging.info("initialize")
     x_var = T.dtensor3('x_var')
-    y_var = T.ivector('y_var')
+    y_var = T.imatrix('y_var')
     lr_var = T.scalar("lr_var")
     label_var = T.vector('label_var')
     rcnn = RCNN(rng=np.random.RandomState(54321),
