@@ -21,7 +21,7 @@ def expand_y(label, n_class, dtype=np.int32):
     """
     label_vector = np.zeros((n_class,))
     label_vector[label] = 1
-    return theano.shared(np.asarray(label_vector, dtype=dtype), name=None)
+    return np.asarray(label_vector, dtype=dtype)
 
 
 def sharedX(X, dtype=theano.config.floatX, name=None):
