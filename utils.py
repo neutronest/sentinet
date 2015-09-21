@@ -28,7 +28,7 @@ def expand_y(y_seq, n_class, dtype=np.int32):
     y_matrix = []
     for y in y_seq:
         y_vec = [0] * n_class
-        y_vec[y] = 1
+        y_vec[int(y)] = 1
         y_matrix.append(y_vec)
 
     return np.asarray(y_matrix, dtype=dtype)
