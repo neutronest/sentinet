@@ -124,7 +124,7 @@ def start_rcnn(dim,
             train_loss_list = compute_loss(utils.wrap_x(train_x[idx]),
                                            utils.expand_y(train_y[idx], n_out))
 
-            logging.info("train loss: %f" % (sum(train_loss_list) * 1.0 / len(train_x[idx])))
+            logging.info("train loss: %f" % (sum(train_loss_list)))
             train_loss += sum(train_loss_list)
         logging.info("the epoch %i's training loss: %f" %(epoch, train_loss))
         logging.info("===================================")
