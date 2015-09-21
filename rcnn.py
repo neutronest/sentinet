@@ -118,11 +118,11 @@ def start_rcnn(dim,
         train_loss = 0
         for idx in xrange(batch_start, batch_stop):
             train_model(utils.wrap_x(train_x[idx]),
-                        utils.wrap_y(train_y[idx]),
+                        utils.expand_y(train_y[idx], n_out),
                         learning_rate)
 
             train_loss_list = compute_loss(utils.wrap_x(train_x[idx]),
-                                           utils.wrap_y(train_y[idx]))
+                                           utils.expand_y(train_y[idx], n_out))
 
             logging.info("train loss: %f" % (sum(train_loss_list) * 1.0 / len(train_x[idx])))
             train_loss += sum(train_loss_list)
@@ -133,9 +133,9 @@ def start_rcnn(dim,
         cost_cnt = 0
         for vdx in xrange(n_valid):
             valid_cost_list = compute_loss(utils.wrap_x(valid_x[vdx]),
-                                           utils.wrap_y(valid_y[vdx]))
+                                           utils.expand_y(valid_y[vdx], n_out))
             valid_error_list = compute_error(utils.wrap_x(valid_x[vdx]),
-                                                         utils.wrap_y(valid_y[vdx]))
+                                             utils.expand_y(valid_y[vdx], n_out))
 
             logging.info("valid loss: %f"%(sum(valid_cost_list)))
             cost_cnt += sum(valid_cost_list)

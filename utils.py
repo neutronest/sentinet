@@ -16,6 +16,13 @@ def wrap_y(y):
     data_y = np.asarray(y, dtype=np.int32)
     return data_y
 
+def expand_y(label, n_class, dtype=np.int32):
+    """
+    """
+    label_vector = np.zeros((n_class,))
+    label_vector[label] = 1
+    return label_vector
+
 
 def sharedX(X, dtype=theano.config.floatX, name=None):
     return theano.shared(np.asarray(X, dtype=dtype), name=name)
