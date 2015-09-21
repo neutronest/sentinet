@@ -95,12 +95,15 @@ class RNN(object):
         if self.output_type == "softmax":
             self.p_y_given_x_var = T.nnet.softmax(self.y_pred_var)
             self.output_var = T.argmax(self.p_y_given_x_var, axis=1)
-            self.loss = self.nll_multiclass # point-free oh~yeah
+            self.loss = self.nll_binary # point-free oh~yeah
 
         ## ==== end function ===
 
     def nll_multiclass(self, y):
         return -T.mean(T.log(self.p_y_given_x_var)[T.arange(y.shape[0]), y])
+
+    def nll_binary(self, y):
+        return T.mean(T.nnet.binary_crossentropy(self.p_y_given_x_var, y))
 
     def error(self, label):
         """
@@ -177,3 +180,42 @@ class RNN_LSTM(object):
         self.W_o = self.glorot_uniform((n_input, n_hidden))
         self.U_o = self.orthogonal((n_hidden, n_hidden))
         self.b_o = shared_zero((n_hidden,))
+
+        self.params = [
+            self.W_i, self.U_i, self.b_i,
+            self.W_f, self.U_f, self.b_f,
+            self.W_c, self.U_c, self.b_c,
+            self.W_o, self.U_o, self.b_o
+        ]
+
+        # LSTM Cell step
+        def _step(self, \
+                  xi_t, xf_t, xo_t, xc_t, \
+                  mask_tm1, h_tm1, c_tm1,\
+                  u_i, u_f, u_o, u_c):
+            h_mask_tm1 = mask_tm1 * h_tm1
+            c_mask_tm1 = mask_tm1 * c_tm1
+
+            i_t = T.nnet.hard_sigmoid(xi_t + T.dot(h_mask_tm1, u_i))
+            f_t = T.nnet.hard_sigmoid(xf_t + T.dot(h_mask_tm1, u_f))
+            c_t = f_t * c_tm1 + i_t * T.tanh(xc_t + T.dot(h_mask_tm1, u_c))
+            o_t = T.nnet.hard_sigmoid(xo_t + T.dot(h_mask_tm1, u_o))
+            h_t = o_t * T.tanh(c_t)
+            return h_t, c_t
+
+        return
+
+    def adadelta_optimizer(self, params, loss):
+
+        def _clip_norm(g, c, norm):
+            if c > 0:
+                g = T.swtich(T.ge(n, c), g * c / n, g)
+            return g
+
+
+        def _get_gradients(params, loss):
+            """
+            """
+            grads = T.grad(loss, params)
+            norm = T.sqrt(sum([g ** 2 for g in grads]))
+            grads = [_clip_norm(g, )]
