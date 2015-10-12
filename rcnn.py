@@ -47,6 +47,7 @@ class RCNN(object):
         self.error = self.rnn.error
         return
 
+"""
 def start_rcnn(dim,
                n_feature_maps,
                window_sizes,
@@ -170,3 +171,4 @@ if __name__ == "__main__":
                n_epochs=50,
                train_pos=1000,
                valid_pos=1006)
+"""

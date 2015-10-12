@@ -18,6 +18,8 @@ class RNN(object):
                  n_input,
                  n_hidden,
                  n_output,
+                 activation=T.nnet.sigmoid,
+                 output_type="softmax",
                  if_dropout=True):
         """
         the rnn init function
