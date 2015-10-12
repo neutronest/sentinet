@@ -33,7 +33,7 @@ class RNN(object):
         self.n_hidden = n_hidden
 
         # recurrent weights as a shared variable
-        W_Init = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
+        W_init = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
                                               low=-.01, high=.01),
                                               dtype=theano.config.floatX)
         self.W = theano.shared(value=W_init, name='W')
