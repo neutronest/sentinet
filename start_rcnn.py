@@ -78,19 +78,19 @@ def start_rnn_with_cnn(dim,
     label_var = T.vector('label_var')
 
 
-    rcnn = rcnn.RCNN(rng=np.random.RandomState(54321),
-                input_data=x_var,
-                dim=dim,
-                n_feature_maps=n_feature_maps,
-                window_sizes=window_sizes,
-                n_hidden=n_hidden,
-                n_out=n_out)
-    cost = rcnn.loss(rcnn.y, y_var)
+    rcnn_model = rcnn.RCNN(rng=np.random.RandomState(54321),
+                           input_data=x_var,
+                           dim=dim,
+                           n_feature_maps=n_feature_maps,
+                           window_sizes=window_sizes,
+                           n_hidden=n_hidden,
+                           n_out=n_out)
+    cost = rcnn_model.loss(rcnn_model.y, y_var)
     #gparams_var = [T.grad(cost, param) for param in rcnn.params]
 
     sgd = optimizer.SGD()
-    gparams = sgd.get_gradients(cost, rcnn.params)
-    sgd_updates = sgd.update_params(rcnn.params)
+    gparams = sgd.get_gradients(cost, rcnn_model.params)
+    sgd_updates = sgd.update_params(rcnn_model.params)
     # basic sgd
     """
     sgd_updates = {}
