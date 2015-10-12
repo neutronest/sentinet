@@ -7,6 +7,7 @@ import random
 import optimizer
 import data_process
 import utils
+import sys
 import rcnn
 
 def start_rnn_with_cnn(dim,
