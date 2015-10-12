@@ -15,6 +15,7 @@ def start_rnn_with_cnn(dim,
                        n_hidden,
                        n_out,
                        learning_rate=0.01,
+                       learning_rate=0.99,
                        n_epochs=50,
                        batch_size=10,
                        train_pos=1000,
@@ -139,3 +140,21 @@ def start_rnn_with_cnn(dim,
             logging.info("epoch %i's train losses is: %f" %(epoch, train_losses))
         # update the params
         compute_sgd_updates(gparams_acc)
+
+if __name__ == "__main__":
+
+    log_file = sys.argv[1]
+    logging.basicConfig(
+        level=logging.DEBUG, format='[%(asctime)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S', filename=log_file, filemode='w')
+    start_rnn_with_cnn(dim=300,
+                       n_feature_maps=300,
+                       window_sizes=(2, 3, 4, 5),
+                       n_hidden=300,
+                       n_out=43,
+                       learning_rate=0.01,
+                       learning_rate_decay=0.99,
+                       batch_size=10,
+                       n_epochs=50,
+                       train_pos=1000,
+                       valid_pos=1006)
