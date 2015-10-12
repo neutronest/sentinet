@@ -42,6 +42,7 @@ class RCNN(object):
         self.n_hidden = self.rnn.n_hidden
         self.params = self.cnn.params + self.rnn.params
         self.output = self.rnn.output_var
+        self.y = self.rnn.p_y_given_x_var
         self.loss = self.rnn.loss
         self.error = self.rnn.error
         return
@@ -80,8 +81,11 @@ def start_rcnn(dim,
                 window_sizes=window_sizes,
                 n_hidden=n_hidden,
                 n_out=n_out)
-
     # definite loss function and SGD funcition
+
+
+
+    cost_for_train = T.vector('cost_for_train')
     cost = rcnn.loss(y_var)
     error = rcnn.error(label_var)
     gparams = [T.grad(cost, param) for param in rcnn.params]

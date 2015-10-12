@@ -35,13 +35,26 @@ def expand_y(y_seq, n_class, dtype=np.int32):
 
 
 def sharedX(X, dtype=theano.config.floatX, name=None):
+    """
+    basic theano variable generator
+    """
     return theano.shared(np.asarray(X, dtype=dtype), name=name)
 
 def uniform(shape, scale=0.05):
-        return sharedX(np.random.uniform(low=-scale, high=scale, size=shape))
+    """
+    theano uniform generator
+    """
+    return sharedX(np.random.uniform(low=-scale, high=scale, size=shape))
 
-def shared_zero(shape, dtype=theano.config.floatX, name=None):
+def shared_zeros(shape, dtype=theano.config.floatX, name=None):
+    """
+    """
     return sharedX(np.zeros(shape, dtype=dtype), name=name)
 
 def shared_ones(shape, dtype=theano.config.floatX, name=None):
+    """
+    """
     return sharedX(np.ones(shape, dtype=dtype), name=name)
+
+def shared_scalar(value=0., dtype=theano.config.floatX, name=None):
+    return sharedX(np.cast[dtype](value))

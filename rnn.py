@@ -4,9 +4,8 @@ import pdb
 import numpy as np
 import theano
 import theano.tensor as T
-
-
-from utils import sharedX, uniform, shared_zero, shared_ones
+import loss
+from utils import sharedX, uniform, shared_zeros, shared_ones
 
 class RNN(object):
     """
@@ -19,8 +18,6 @@ class RNN(object):
                  n_input,
                  n_hidden,
                  n_output,
-                 activation="sigmoid",
-                 output_type="softmax",
                  if_dropout=True):
         """
         the rnn init function
@@ -31,12 +28,10 @@ class RNN(object):
         """
 
         self.input_data = input_data
-        self.activation = activation
-        self.output_type = output_type
         self.n_hidden = n_hidden
 
         # recurrent weights as a shared variable
-        W_init = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
+        W_Init = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
                                               low=-.01, high=.01),
                                               dtype=theano.config.floatX)
         self.W = theano.shared(value=W_init, name='W')
@@ -91,29 +86,12 @@ class RNN(object):
                                                        sequences=self.input_data,
                                                        outputs_info=[self.h0, None])
 
-
-        if self.output_type == "softmax":
-            self.p_y_given_x_var = T.nnet.softmax(self.y_pred_var)
-            self.output_var = T.argmax(self.p_y_given_x_var, axis=1)
-            self.loss = self.nll_binary # point-free oh~yeah
-
+        self.p_y_given_x_var = T.nnet.softmax(self.y_pred_var)
+        self.output_var = T.argmax(self.p_y_given_x_var, axis=1)
+        self.loss = loss.mean_binary_crossentropy
+        self.error = loss.mean_classify_error
         ## ==== end function ===
-
-    def nll_multiclass(self, y):
-        return -T.mean(T.log(self.p_y_given_x_var)[T.arange(y.shape[0]), y])
-
-    def nll_binary(self, y):
-        return T.mean(T.nnet.binary_crossentropy(self.p_y_given_x_var, y))
-
-    def error(self, label):
-        """
-        Parameter:
-        label: the real category of data
-               type: list(int)
-        """
-        return T.mean(T.neq(self.output_var, label))
-
-
+        return
 
 class RNN_LSTM(object):
     """
@@ -218,4 +196,3 @@ class RNN_LSTM(object):
             """
             grads = T.grad(loss, params)
             norm = T.sqrt(sum([g ** 2 for g in grads]))
-            grads = [_clip_norm(g, )]
