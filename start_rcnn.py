@@ -110,7 +110,9 @@ def start_rnn_with_cnn(dim,
     epoch = 0
 
     compute_gradients = theano.function(inputs=[x_var, y_var],
-                                        outputs=[gparams, cost])
+                                        outputs=gparams)
+    compute_loss = theano.function(inputs=[x_var, y_var],
+                                   outputs=[cost])
     compute_sgd_updates = theano.function(inputs=[sgd.gparams_acc],
                                           outputs=sgd_updates)
     """
@@ -130,8 +132,10 @@ def start_rnn_with_cnn(dim,
         batch_stop = batch_start + batch_size
         for idx in xrange(batch_start, batch_stop):
             # accumulate gradients
-            gparams, train_loss = compute_gradients(utils.wrap_x(train_x[idx]),
+            gparams = compute_gradients(utils.wrap_x(train_x[idx]),
                                         utils.expand_y(train_y[idx], 43))
+            train_loss = compute_loss(utils.wrap_x(train_x[idx]),
+                                      utils.expand_y(train_x[idx], 43))
             if gparams_acc == None:
                 gparams_acc = gparams
             else:
