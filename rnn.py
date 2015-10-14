@@ -147,7 +147,7 @@ class RNN_LSTM(object):
         # weights of LSTM
         self.W_i = self.glorot_uniform((n_input, n_hidden))
         self.U_i = self.orthogonal((n_hidden, n_hidden))
-        self.b_i = shared_zero((n_hidden,))
+        self.b_i = shared_zeros((n_hidden,))
 
         self.W_f = self.glorot_uniform((n_input, n_hidden))
         self.U_f = self.glorot_uniform((n_hidden, n_hidden))
@@ -155,11 +155,11 @@ class RNN_LSTM(object):
 
         self.W_c = self.glorot_uniform((n_input, n_hidden))
         self.U_c = self.orthogonal((n_hidden, n_hidden))
-        self.b_c = shared_zero((n_hidden,))
+        self.b_c = shared_zeros((n_hidden,))
 
         self.W_o = self.glorot_uniform((n_input, n_hidden))
         self.U_o = self.orthogonal((n_hidden, n_hidden))
-        self.b_o = shared_zero((n_hidden,))
+        self.b_o = shared_zeros((n_hidden,))
 
         self.params = [
             self.W_i, self.U_i, self.b_i,
