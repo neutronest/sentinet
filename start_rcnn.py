@@ -105,7 +105,7 @@ def start_rnn_with_cnn(dim,
 
     compute_loss = theano.function(inputs=[x_var, y_var],
                                    outputs=[cost])
-    compute_error  =theano.function(inputs=[x_var, y_var, label_var],
+    compute_error  =theano.function(inputs=[x_var, label_var],
                                     outputs=[error])
     """
     sgd_updates = {}
@@ -155,7 +155,6 @@ def start_rnn_with_cnn(dim,
             valid_loss = compute_loss(utils.wrap_x(valid_x[vdx]),
                                       utils.expand_y(valid_y[vdx],43))
             valid_error = compute_error(utils.wrap.x(valid_x[vdx]),
-                                        utils.expand_y(valid_y[vdx]),
                                         utils.wrap_y(valid_y[vdx]))
             item_sum += len(valid_y[vdx])
             error_sum += valid_error
