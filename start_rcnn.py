@@ -87,7 +87,7 @@ def start_rnn_with_cnn(dim,
                            n_out=n_out)
     cost = rcnn_model.loss(rcnn_model.y, y_var)
     #gparams_var = [T.grad(cost, param) for param in rcnn.params]
-    gparams = [T.grad(cost, param_var) for param_var in rcnn.params]
+    gparams = [T.grad(cost, param_var) for param_var in rcnn_model.params]
     sgd_updates = {}
     for param, gparam in zip(rcnn_model.params, gparams):
         ugd = - gparam * lr_var
