@@ -91,7 +91,7 @@ def start_rnn_with_cnn(dim,
     sgd_updates = {}
     for param, gparam in zip(rcnn_model.params, gparams):
         ugd = - gparam * lr_var
-        sgd_updates[param] += ugd
+        sgd_updates[param] = param + ugd
 
 
     #compute_gradients = theano.function(inputs=[x_var, y_var],
