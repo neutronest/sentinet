@@ -97,7 +97,6 @@ def load_utterance_dataset(train_pos, valid_pos):
         max_sen_len = 0
         len_of_sens = [len(v[1]) for k,v in sen_dict.items()]
         max_sen_len = max(len_of_sens)
-        print "the max len of sentences in this thread is", max_sen_len
         for k, v in sen_dict.items():
             sen_vec = np.zeros((max_sen_len, 300))
             for i in xrange(len(v[1])):

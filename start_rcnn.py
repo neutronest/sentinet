@@ -86,6 +86,7 @@ def start_rnn_with_cnn(dim,
                            n_hidden=n_hidden,
                            n_out=n_out)
     cost = rcnn_model.loss(rcnn_model.y, y_var)
+    error = rcnn_model.error(label_var, rcnn_model.output_var)
     #gparams_var = [T.grad(cost, param) for param in rcnn.params]
     gparams = [T.grad(cost, param_var) for param_var in rcnn_model.params]
     sgd_updates = {}
@@ -101,6 +102,11 @@ def start_rnn_with_cnn(dim,
     train_loss = theano.function(inputs=[x_var, y_var, lr_var],
                                  outputs=[cost],
                                  updates=sgd_updates)
+
+    compute_loss = theano.function(inputs=[x_var, y_var],
+                                   outputs=[cost])
+    compute_error  =theano.function(inputs=[x_var, y_var, label_var],
+                                    outputs=[error])
     """
     sgd_updates = {}
     gparams = [T.grad(cost, param) for param in rcnn.params]
@@ -138,10 +144,24 @@ def start_rnn_with_cnn(dim,
             train_loss = train_loss(utils.wrap_x(train_x[idx]),
                                     utils.expand_y(train_y[idx], 43),
                                     learning_rate) # train_loss: list of float
-            train_losses += np.mean(train_loss)
-            logging.info("the seq %i's train loss is: %f"%(train_loss))
+            train_loss_avg = np.mean(train_loss)
+            train_losses += train_loss_avg
+            logging.info("the seq %i's train loss is: %f"%(train_loss_avg))
             logging.info("epoch %i's train losses is: %f" %(epoch, train_losses))
-        # update the params
+        # valid process
+        error_sum = 0
+        item_sum = 0
+        for vdx in xrange(n_valid):
+            valid_loss = compute_loss(utils.wrap_x(valid_x[vdx]),
+                                      utils.expand_y(valid_y[vdx],43))
+            valid_error = compute_error(utils.wrap.x(valid_x[vdx]),
+                                        utils.expand_y(valid_y[vdx]),
+                                        utils.wrap_y(valid_y[vdx]))
+            item_sum += len(valid_y[vdx])
+            error_sum += valid_error
+        accurate_res = 0.
+        accurate_res = 1. - (error_sum  * 1. / item_sum)
+        logging.info("the accurate of valid set is %f"%(accurate_res))
 
 if __name__ == "__main__":
 

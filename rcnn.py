@@ -41,7 +41,7 @@ class RCNN(object):
         self.n_out = n_out
         self.n_hidden = self.rnn.n_hidden
         self.params = self.cnn.params + self.rnn.params
-        self.output = self.rnn.output_var
+        self.output_var = self.rnn.output_var
         self.y = self.rnn.p_y_given_x_var
         self.loss = self.rnn.loss
         self.error = self.rnn.error
