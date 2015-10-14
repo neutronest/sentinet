@@ -48,7 +48,7 @@ class CNN(object):
                                                   ws,
                                                   self.dim)),
                                 dtype=theano.config.floatX)
-            W = theano.shared(value=W_init, name="W")
+            W = theano.shared(value=W_init)
             self.W_list.append(W)
         self.params += self.W_list
         b_init = np.asarray(np.zeros((self.n_feature_maps * len(self.window_sizes),), dtype=theano.config.floatX))
