@@ -89,9 +89,11 @@ def start_rnn_with_cnn(dim,
     #gparams_var = [T.grad(cost, param) for param in rcnn.params]
     gparams = [T.grad(cost, param_var) for param_var in rcnn_model.params]
     sgd_updates = {}
+    momentum_updates = {}
     for param, gparam in zip(rcnn_model.params, gparams):
         ugd = - gparam * lr_var
         sgd_updates[param] = param + ugd
+        momentum_updates[param] = ugd
 
 
     #compute_gradients = theano.function(inputs=[x_var, y_var],
@@ -135,8 +137,8 @@ def start_rnn_with_cnn(dim,
             # accumulate gradients
             train_loss = train_loss(utils.wrap_x(train_x[idx]),
                                     utils.expand_y(train_y[idx], 43),
-                                    learning_rate)
-            train_losses += train_loss
+                                    learning_rate) # train_loss: list of float
+            train_losses += np.mean(train_loss)
             logging.info("the seq %i's train loss is: %f"%(train_loss))
             logging.info("epoch %i's train losses is: %f" %(epoch, train_losses))
         # update the params
