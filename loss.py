@@ -18,15 +18,17 @@ def mean_binary_crossentropy(y_true, y_pred):
     y_true: the prob distribution of actual output
     type: theano.variable dtype=float32/64
 
-    y_pred: the prob distribution of prdict output
+    y_pred: the prob distribution of predict output
     type: theano.variable dtype=float32/64
 
     """
 
     # tricks
     # limit the y_pred at the [epsilon, 1-epsilon]
-    y_pred = T.clip(y_pred, epsilon, 1-epsilon)
-    return T.nnet.binary_crossentropy(y_pred, y_true).mean(axis=-1)
+
+    # y_pred = T.clip(y_pred, epsilon, 1-epsilon)
+    #return T.nnet.binary_crossentropy(y_pred, y_true).mean(axis=-1)
+    return T.mean(T.nnet.binary_crossentropy(y_pred, y_true))
 
 def mean_classify_error(label_true, label_pred):
     """
