@@ -134,7 +134,7 @@ def start_rnn_with_cnn(dim,
         for idx in xrange(batch_start, batch_stop):
             # accumulate gradients
             train_loss = train_loss(utils.wrap_x(train_x[idx]),
-                                    utils.expand_y(train_x[idx], 43),
+                                    utils.expand_y(train_y[idx], 43),
                                     learning_rate)
             train_losses += train_loss
             logging.info("the seq %i's train loss is: %f"%(train_loss))
