@@ -87,11 +87,18 @@ def start_rnn_with_cnn(dim,
                            n_out=n_out)
     cost = rcnn_model.loss(rcnn_model.y, y_var)
     #gparams_var = [T.grad(cost, param) for param in rcnn.params]
+    gparams = [T.grad(cost, param_var) for param_var in rcnn.params]
+    sgd_updates = {}
+    for param, gparam in zip(rcnn_model.params, gparams):
+        ugd = - gparam * lr_var
+        sgd_updates[param] += ugd
 
-    sgd = optimizer.SGD()
-    gparams = sgd.get_gradients(cost, rcnn_model.params)
-    sgd_updates = sgd.update_params(rcnn_model.params)
-    # basic sgd
+
+    #compute_gradients = theano.function(inputs=[x_var, y_var],
+    #                                    outputs=gparams)
+    train_loss = theano.function(inputs=[x_var, y_var],
+                                 outputs=[cost],
+                                 updates=sgd_updates)
     """
     sgd_updates = {}
     gparams = [T.grad(cost, param) for param in rcnn.params]
@@ -109,12 +116,6 @@ def start_rnn_with_cnn(dim,
     n_test = len(test_x)
     epoch = 0
 
-    compute_gradients = theano.function(inputs=[x_var, y_var],
-                                        outputs=gparams)
-    compute_loss = theano.function(inputs=[x_var, y_var],
-                                   outputs=[cost])
-    compute_sgd_updates = theano.function(inputs=[sgd.gparams_acc],
-                                          outputs=sgd_updates)
     """
     train_model_fn = theano.function(inputs=[x_var, y_var, lr_var],
                                      updates=sgd_updates,
@@ -122,7 +123,7 @@ def start_rnn_with_cnn(dim,
     """
     while epoch < n_epochs:
         epoch += 1
-        gparams_acc = None
+        #gparams_acc = None
         train_losses = 0.
         # mini batch
         logging.info("prepare the %i's mini batch"%(epoch))
@@ -132,19 +133,12 @@ def start_rnn_with_cnn(dim,
         batch_stop = batch_start + batch_size
         for idx in xrange(batch_start, batch_stop):
             # accumulate gradients
-            gparams = compute_gradients(utils.wrap_x(train_x[idx]),
-                                        utils.expand_y(train_y[idx], 43))
-            train_loss = compute_loss(utils.wrap_x(train_x[idx]),
-                                      utils.expand_y(train_x[idx], 43))
-            if gparams_acc == None:
-                gparams_acc = gparams
-            else:
-                gparams_acc = [g + g_acc for g, g_acc in zip(gparams, gparams_acc)]
+            train_loss = train_loss(utils.wrap_x(train_x[idx]),
+                                    utils.expand_y(train_x[idx], 43))
             train_losses += train_loss
             logging.info("the seq %i's train loss is: %f"%(train_loss))
             logging.info("epoch %i's train losses is: %f" %(epoch, train_losses))
         # update the params
-        compute_sgd_updates(gparams_acc)
 
 if __name__ == "__main__":
 
