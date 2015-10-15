@@ -99,14 +99,14 @@ def start_rnn_with_cnn(dim,
 
     #compute_gradients = theano.function(inputs=[x_var, y_var],
     #                                    outputs=gparams)
-    train_loss = theano.function(inputs=[x_var, y_var, lr_var],
-                                 outputs=cost,
+    train_loss_fn = theano.function(inputs=[x_var, y_var, lr_var],
+                                 outputs=[cost],
                                  updates=sgd_updates)
 
-    compute_loss = theano.function(inputs=[x_var, y_var],
-                                   outputs=cost)
-    compute_error  =theano.function(inputs=[x_var, label_var],
-                                    outputs=error)
+    compute_loss_fn = theano.function(inputs=[x_var, y_var],
+                                   outputs=[cost])
+    compute_error_fn  =theano.function(inputs=[x_var, label_var],
+                                    outputs=[error])
     """
     sgd_updates = {}
     gparams = [T.grad(cost, param) for param in rcnn.params]
@@ -141,9 +141,9 @@ def start_rnn_with_cnn(dim,
         batch_stop = batch_start + batch_size
         for idx in xrange(batch_start, batch_stop):
             # accumulate gradients
-            train_loss = train_loss(utils.wrap_x(train_x[idx]),
-                                    utils.expand_y(train_y[idx], 43),
-                                    learning_rate) # train_loss: list of float
+            train_loss = train_loss_fn(utils.wrap_x(train_x[idx]),
+                                 utils.expand_y(train_y[idx], 43),
+                                 learning_rate) # train_loss: list of float
             train_loss_avg = np.mean(train_loss)
             train_losses += train_loss_avg
             logging.info("the seq %i's train loss is: %f"%(idx, train_loss_avg))
@@ -152,10 +152,10 @@ def start_rnn_with_cnn(dim,
         error_sum = 0
         item_sum = 0
         for vdx in xrange(n_valid):
-            valid_loss = compute_loss(utils.wrap_x(valid_x[vdx]),
-                                      utils.expand_y(valid_y[vdx],43))
-            valid_error = compute_error(utils.wrap.x(valid_x[vdx]),
-                                        utils.wrap_y(valid_y[vdx]))
+            valid_loss = compute_loss_fn(utils.wrap_x(valid_x[vdx]),
+                                         utils.expand_y(valid_y[vdx],43))
+            valid_error = compute_error_fn(utils.wrap_x(valid_x[vdx]),
+                                           utils.wrap_y(valid_y[vdx]))
             item_sum += len(valid_y[vdx])
             error_sum += valid_error
         accurate_res = 0.
