@@ -100,13 +100,13 @@ def start_rnn_with_cnn(dim,
     #compute_gradients = theano.function(inputs=[x_var, y_var],
     #                                    outputs=gparams)
     train_loss = theano.function(inputs=[x_var, y_var, lr_var],
-                                 outputs=[cost],
+                                 outputs=cost,
                                  updates=sgd_updates)
 
     compute_loss = theano.function(inputs=[x_var, y_var],
-                                   outputs=[cost])
+                                   outputs=cost)
     compute_error  =theano.function(inputs=[x_var, label_var],
-                                    outputs=[error])
+                                    outputs=error)
     """
     sgd_updates = {}
     gparams = [T.grad(cost, param) for param in rcnn.params]
