@@ -106,7 +106,7 @@ def start_rnn_with_cnn(dim,
     compute_loss = theano.function(inputs=[x_var, y_var],
                                    outputs=cost)
     compute_error  =theano.function(inputs=[x_var, label_var],
-                                    outputs=error_sum)
+                                    outputs=error)
     """
     sgd_updates = {}
     gparams = [T.grad(cost, param) for param in rcnn.params]
