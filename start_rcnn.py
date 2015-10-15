@@ -146,7 +146,7 @@ def start_rnn_with_cnn(dim,
                                     learning_rate) # train_loss: list of float
             train_loss_avg = np.mean(train_loss)
             train_losses += train_loss_avg
-            logging.info("the seq %i's train loss is: %f"%(train_loss_avg))
+            logging.info("the seq %i's train loss is: %f"%(idx, train_loss_avg))
             logging.info("epoch %i's train losses is: %f" %(epoch, train_losses))
         # valid process
         error_sum = 0
@@ -161,6 +161,7 @@ def start_rnn_with_cnn(dim,
         accurate_res = 0.
         accurate_res = 1. - (error_sum  * 1. / item_sum)
         logging.info("the accurate of valid set is %f"%(accurate_res))
+    return
 
 if __name__ == "__main__":
 
