@@ -5,10 +5,16 @@ import numpy as np
 import logging
 import random
 import optimizer
+from collections import OrderedDict
 import data_process
 import utils
 import sys
 import rcnn
+
+# theano setting
+theano.config.compute_test_value = 'warn'
+theano.config.exception_verbosity = 'high'
+
 
 def start_rnn_with_cnn(dim,
                        n_feature_maps,
@@ -89,7 +95,7 @@ def start_rnn_with_cnn(dim,
     error = rcnn_model.error(label_var, rcnn_model.output_var)
     #gparams_var = [T.grad(cost, param) for param in rcnn.params]
     gparams = [T.grad(cost, param_var) for param_var in rcnn_model.params]
-    sgd_updates = {}
+    sgd_updates = OrderedDict()
     momentum_updates = {}
     for param, gparam in zip(rcnn_model.params, gparams):
         ugd = - gparam * lr_var
