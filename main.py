@@ -185,8 +185,10 @@ if __name__ == "__main__":
 
         elif opt == "--log_path":
             # example of arg: ../logs/result1.txt of str
-            
             log_path = arg
+
+        elif opt == "--word_dim":
+            word_dim = int(arg)
 
         elif opt == "--cnn_n_feature_maps":
             # example of arg: 300 of str
