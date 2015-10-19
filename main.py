@@ -54,6 +54,15 @@ def run_swda_experiment(load_data,
         label_var = T.vector('label_var')
         cost = model.loss(model.y, y_var)
         error = model.error(label_var, model.output_var)
+    else:
+
+        y_var = [T.imatrix()] * batch_size
+        label_var = [T.vector()] * batch_size
+        cost = None
+        for i in xrange(0, batch_size):
+            cost += model.loss(model.y, y_var[i])
+        lr_var = T.scalar("lr_var")
+
     
     if optimizer == "sgd":
         gparams = [T.grad(cost, param_var) for param_var in model.params]
