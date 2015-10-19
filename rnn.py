@@ -33,10 +33,10 @@ class RNN(object):
         self.n_hidden = n_hidden
 
         # recurrent weights as a shared variable
-        W_init = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
+        W_h = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
                                               low=-.01, high=.01),
                                               dtype=theano.config.floatX)
-        self.W = theano.shared(value=W_init, name='W_h')
+        self.W_h = theano.shared(value=W_h, name='W_h')
         # input to hidden layer weights
         W_in_init = np.asarray(np.random.uniform(size=(n_input, n_hidden),
                                                  low=-.01, high=.01),
@@ -58,9 +58,9 @@ class RNN(object):
         by_init = np.zeros((n_output,), dtype=theano.config.floatX)
         self.by = theano.shared(value=by_init, name='by')
 
-        self.params = [self.W, self.W_in, self.W_out, self.h0,
+        self.params = [self.W_h, self.W_in, self.W_out, self.h0,
                        self.bh, self.by]
-
+                       
         # for every parameter, we maintain it's last update
         # the idea here is to use "momentum"
         # keep moving mostly in the same direction
@@ -69,8 +69,7 @@ class RNN(object):
 
             """
 
-            h_t = T.nnet.sigmoid(T.dot(x_t, self.W_in) + T.dot(h_previous, self.W) + self.bh)
-
+            h_t = T.nnet.sigmoid(T.dot(x_t, self.W_in) + T.dot(h_previous, self.W_h) + self.bh)
             y_t = T.dot(h_t, self.W_out) + self.by
 
             # dropout layer

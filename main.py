@@ -48,14 +48,13 @@ def run_swda_experiment(load_data,
     optimizer_updates = OrderedDict()
 
     # standard batchsize or mini batch
-    if batch_size == 1:
+    if batch_size == 10:
         y_var = T.imatrix('y_var')
         lr_var = T.scalar('lr_var')
         label_var = T.vector('label_var')
         cost = model.loss(model.y, y_var)
         error = model.error(label_var, model.output_var)
     else:
-
         y_var = [T.imatrix()] * batch_size
         label_var = [T.vector()] * batch_size
         cost = None
@@ -66,10 +65,13 @@ def run_swda_experiment(load_data,
     
     if optimizer == "sgd":
         gparams = [T.grad(cost, param_var) for param_var in model.params]
+        optimizer_updates = [(param, param - gparam * lr_var) \
+            for param, gparam in zip(self.params, gparams)]
+        """
         for param, gparam in zip(model.params, gparams):
             ugd = - gparam * lr_var
             optimizer_updates[param] = param + ugd
-
+        """
 
     #compute_gradients = theano.function(inputs=[x_var, y_var],
     #                                    outputs=gparams)
