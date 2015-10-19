@@ -66,7 +66,7 @@ def run_swda_experiment(load_data,
     if optimizer == "sgd":
         gparams = [T.grad(cost, param_var) for param_var in model.params]
         optimizer_updates = [(param, param - gparam * lr_var) \
-            for param, gparam in zip(models.params, gparams)]
+            for param, gparam in zip(model.params, gparams)]
         """
         for param, gparam in zip(model.params, gparams):
             ugd = - gparam * lr_var
