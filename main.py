@@ -86,6 +86,8 @@ def run_swda_experiment(load_data,
                                        outputs=[error],
                                        mode="DebugMode")
 
+    print "begin to train"
+    logging.info("begin to train")
     while epoch < n_epochs:
         epoch += 1
         #gparams_acc = None
