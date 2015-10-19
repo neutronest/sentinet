@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
         elif opt == "--cnn_window_sizes":
             # example of arg: 2,3,4 of str
-            cnn_window_sizes = tuple([int(t) for t in arg.split(" ")])
+            cnn_window_sizes = tuple([int(t) for t in arg.split("@")])
 
         elif opt == "--rnn_n_hidden":
             # example of arg: 300 of str
