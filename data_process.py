@@ -135,7 +135,7 @@ def load_utterance_dataset(train_pos, valid_pos):
     valid_y = data_y[TRAIN_SET:VALID_SET]
     test_x = data_x[VALID_SET:]
     test_y = data_y[VALID_SET:]
-    return train_x, train_y, valid_x, valid_y, test_x, test_y
+    return (train_x, train_y, valid_x, valid_y, test_x, test_y)
 
 def gen_structured_xy(thread_data):
     """

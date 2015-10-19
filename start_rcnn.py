@@ -11,6 +11,7 @@ import utils
 import sys
 import rcnn
 
+
 # theano setting
 theano.config.compute_test_value = 'warn'
 theano.config.exception_verbosity = 'high'
@@ -112,7 +113,7 @@ def start_rnn_with_cnn(dim,
     compute_loss_fn = theano.function(inputs=[x_var, y_var],
                                       outputs=[cost],
                                       mode="DebugMode")
-    compute_error_fn  =theano.function(inputs=[x_var, label_var],
+    compute_error_fn = theano.function(inputs=[x_var, label_var],
                                        outputs=[error],
                                        mode="DebugMode")
     """
@@ -150,8 +151,8 @@ def start_rnn_with_cnn(dim,
         for idx in xrange(batch_start, batch_stop):
             # accumulate gradients
             train_loss = train_loss_fn(utils.wrap_x(train_x[idx]),
-                                 utils.expand_y(train_y[idx], 43),
-                                 learning_rate) # train_loss: list of float
+                                       utils.expand_y(train_y[idx], 43),
+                                       learning_rate) # train_loss: list of float
             train_loss_avg = np.mean(train_loss)
             train_losses += train_loss_avg
             logging.info("the seq %i's train loss is: %f"%(idx, train_loss_avg))
