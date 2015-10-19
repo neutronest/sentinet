@@ -167,20 +167,25 @@ if __name__ == "__main__":
         "valid_pos="])
     
     for opt, arg in options:
+
+        print (opt, arg)
+
         if opt == "--help":
             print "this is the rnn model main function. Need some help?"                
         
-        elif opt == "experiment":
+        elif opt == "--experiment":
             experiment = arg
 
-        elif opt == "model_name":
+        elif opt == "--model_name":
             model_name = arg
 
-        elif opt == "dataset_name":
+        elif opt == "--dataset_name":
+            print arg
             dataset_name = arg
 
-        elif opt == "log_path":
+        elif opt == "--log_path":
             # example of arg: ../logs/result1.txt of str
+            
             log_path = arg
 
         elif opt == "--cnn_n_feature_maps":
@@ -208,30 +213,29 @@ if __name__ == "__main__":
                 optimizer_method = optimizer.SGD()
             # TODO: other optimizer
         
-        elif opt == "learning_rate":
+        elif opt == "--learning_rate":
             # example of arg: 0.01 of str
             learning_rate = float(arg)
 
-        elif opt == "batch_size":
+        elif opt == "--batch_size":
             # example of arg: 10 of str
             batch_size = int(arg)
 
-        elif opt == "n_epochs":
+        elif opt == "--n_epochs":
             # example of arg: 100 of str
             n_epochs = int(arg)
 
-        elif opt == "train_pos":
+        elif opt == "--train_pos":
             # example of arg: 1000 of str
             train_pos = int(arg)
 
-        elif opt == "valid_pos":
+        elif opt == "--valid_pos":
             # example of arg: 1005 of str
             valid_pos = int(arg)
 
     # define log file
     print "prepare the logging file"
-    assert(log_path != None)
-    
+    assert(log_path != None)  
     logging.basicConfig(
         level=logging.DEBUG, format='[%(asctime)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S', filename=log_path, filemode='w')
