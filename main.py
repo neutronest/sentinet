@@ -13,7 +13,8 @@ import utils
 
 
 def run_swda_experiment(load_data, 
-                        model, 
+                        model,
+                        batch_type,
                         batch_size,
                         optimizer="sgd"):
     """
@@ -48,13 +49,14 @@ def run_swda_experiment(load_data,
     optimizer_updates = OrderedDict()
 
     # standard batchsize or mini batch
-    if batch_size == 10:
+    if batch_type == "all":
         y_var = T.imatrix('y_var')
         lr_var = T.scalar('lr_var')
         label_var = T.vector('label_var')
         cost = model.loss(model.y, y_var)
         error = model.error(label_var, model.output_var)
-    else:
+    
+    elif batch_type == "minibatch":
         y_var = [T.imatrix()] * batch_size
         label_var = [T.vector()] * batch_size
         cost = None
@@ -93,10 +95,11 @@ def run_swda_experiment(load_data,
         #gparams_acc = None
         train_losses = 0.
         # mini batch
+        valid_idx = 0
         logging.info("prepare the %i's mini batch"%(epoch))
         logging.info("the size of batch is %i"%(batch_size))
 
-        batch_index_list = [x for x in xrange(0, 1000, 10)]
+        batch_index_list = [x for x in xrange(0, 1000, batch_size)]
 
         for batch_index in batch_index_list:
             batch_start = batch_index
@@ -112,18 +115,19 @@ def run_swda_experiment(load_data,
                 logging.info("the seq %i's train loss is: %f"%(idx, train_loss_avg))
                 logging.info("epoch %i's train losses is: %f" %(epoch, train_losses))
             # valid process
-            error_sum = 0
-            item_sum = 0
-            for vdx in xrange(n_valid):
-                valid_loss = compute_loss_fn(utils.wrap_x(valid_x[vdx]),
-                                             utils.expand_y(valid_y[vdx],43))
-                valid_error = compute_error_fn(utils.wrap_x(valid_x[vdx]),
-                                               utils.wrap_y(valid_y[vdx]))
-                item_sum += len(valid_y[vdx])
-                error_sum += valid_error
-            accurate_res = 0.
-            accurate_res = 1. - (error_sum  * 1. / item_sum)
-            logging.info("the accurate of valid set is %f"%(accurate_res))
+            if valid_idx % 20 == 0:
+                error_sum = 0
+                item_sum = 0
+                for vdx in xrange(n_valid):
+                    valid_loss = compute_loss_fn(utils.wrap_x(valid_x[vdx]),
+                                                 utils.expand_y(valid_y[vdx],43))
+                    valid_error = compute_error_fn(utils.wrap_x(valid_x[vdx]),
+                                                   utils.wrap_y(valid_y[vdx]))
+                    item_sum += len(valid_y[vdx])
+                    error_sum += valid_error
+                accurate_res = 0.
+                accurate_res = 1. - (error_sum  * 1. / item_sum)
+                logging.info("the accurate of valid set is %f"%(accurate_res))
     return
 
 def run_microblog_experiment():
@@ -151,6 +155,7 @@ if __name__ == "__main__":
     dropout_rate = None
     optimizer_method = None
     learning_rate = None
+    batch_type = None
     batch_size = None
     n_epochs = None
     train_pos = None
@@ -232,6 +237,10 @@ if __name__ == "__main__":
             # example of arg: 0.01 of str
             learning_rate = float(arg)
 
+        elif opt == "--batch_type":
+            # example of arg: all/minibatch
+            batch_type = arg
+
         elif opt == "--batch_size":
             # example of arg: 10 of str
             batch_size = int(arg)
@@ -299,9 +308,12 @@ if __name__ == "__main__":
     # begin to experiment
     assert(run_model != None)
     assert(load_data != None)
+    assert(batch_type != None)
+    assert(batch_size != None)
     if experiment == "swda":
         run_swda_experiment(load_data,
                             run_model,
+                            batch_type,
                             batch_size,
                             "sgd")
 
