@@ -60,6 +60,7 @@ def run_swda_experiment(load_data,
         error = model.error(label_var, model.output_var)
     
     elif batch_type == "minibatch":
+        logging.info("the batch type is minibatch")
         y_var = [T.imatrix()] * batch_size
         label_var = [T.vector()] * batch_size
         cost = None
@@ -81,14 +82,14 @@ def run_swda_experiment(load_data,
     #compute_gradients = theano.function(inputs=[x_var, y_var],
     #                                    outputs=gparams)
     train_loss_fn = theano.function(inputs=[model.input_var, y_var, lr_var],
-                                    outputs=[cost],
+                                    outputs=cost,
                                     updates=optimizer_updates)
 
     compute_loss_fn = theano.function(inputs=[model.input_var, y_var],
-                                      outputs=[cost],
+                                      outputs=cost,
                                       mode="DebugMode")
     compute_error_fn = theano.function(inputs=[model.input_var, label_var],
-                                       outputs=[error],
+                                       outputs=cost,
                                        mode="DebugMode")
 
     print "begin to train"
