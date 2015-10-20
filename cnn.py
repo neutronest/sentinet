@@ -70,7 +70,7 @@ class CNN(object):
 
 
         self.output, _ = theano.scan(fn=_conv,
-                                       sequences=[self.input_data],
+                                       sequences=self.input_data,
                                        n_steps=self.input_data.shape[0],
                                        outputs_info=None)
         #pdb.set_trace()
