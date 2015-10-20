@@ -14,6 +14,7 @@ import utils
 
 def run_swda_experiment(load_data, 
                         model,
+                        input_var,
                         batch_type,
                         batch_size,
                         optimizer="sgd"):
@@ -28,6 +29,8 @@ def run_swda_experiment(load_data,
     model: the deep learning model we used
         example: rcnn, rcnn_f, lstm, lstm_f
 
+    input_var: the theano variable that contain the original input data symbol.
+        type: theano.tensor
     Return
 
     """
@@ -77,14 +80,14 @@ def run_swda_experiment(load_data,
 
     #compute_gradients = theano.function(inputs=[x_var, y_var],
     #                                    outputs=gparams)
-    train_loss_fn = theano.function(inputs=[x_var, y_var, lr_var],
+    train_loss_fn = theano.function(inputs=[input_var, y_var, lr_var],
                                     outputs=[cost],
                                     updates=optimizer_updates)
 
-    compute_loss_fn = theano.function(inputs=[x_var, y_var],
+    compute_loss_fn = theano.function(inputs=[input_var, y_var],
                                       outputs=[cost],
                                       mode="DebugMode")
-    compute_error_fn = theano.function(inputs=[x_var, label_var],
+    compute_error_fn = theano.function(inputs=[input_var, label_var],
                                        outputs=[error],
                                        mode="DebugMode")
 
@@ -315,6 +318,7 @@ if __name__ == "__main__":
     if experiment == "swda":
         run_swda_experiment(load_data,
                             run_model,
+                            x_var,
                             batch_type,
                             batch_size,
                             "sgd")
