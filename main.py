@@ -179,6 +179,7 @@ if __name__ == "__main__":
         "dropout_rate=", 
         "optimizer_method=", 
         "learning_rate=",
+        "batch_type=",
         "batch_size=",
         "n_epochs=",
         "train_pos=",
