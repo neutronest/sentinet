@@ -31,6 +31,7 @@ class RCNN(object):
                            activation=T.nnet.sigmoid,
                            output_type="softmax")
 
+        self.input_var = input_data
         self.window_sizes = window_sizes
         self.dim = dim
         self.n_out = n_out
