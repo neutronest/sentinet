@@ -90,12 +90,13 @@ def run_swda_experiment(load_data,
 
     print "begin to train"
     logging.info("begin to train")
+    valid_idx = 0
     while epoch < n_epochs:
+        valid_idx += 1
         epoch += 1
         #gparams_acc = None
         train_losses = 0.
         # mini batch
-        valid_idx = 0
         logging.info("prepare the %i's mini batch"%(epoch))
         logging.info("the size of batch is %i"%(batch_size))
 
@@ -114,20 +115,20 @@ def run_swda_experiment(load_data,
                 train_losses += train_loss_avg
                 logging.info("the seq %i's train loss is: %f"%(idx, train_loss_avg))
                 logging.info("epoch %i's train losses is: %f" %(epoch, train_losses))
-            # valid process
-            if valid_idx % 20 == 0:
-                error_sum = 0
-                item_sum = 0
-                for vdx in xrange(n_valid):
-                    valid_loss = compute_loss_fn(utils.wrap_x(valid_x[vdx]),
-                                                 utils.expand_y(valid_y[vdx],43))
-                    valid_error = compute_error_fn(utils.wrap_x(valid_x[vdx]),
-                                                   utils.wrap_y(valid_y[vdx]))
-                    item_sum += len(valid_y[vdx])
-                    error_sum += valid_error
-                accurate_res = 0.
-                accurate_res = 1. - (error_sum  * 1. / item_sum)
-                logging.info("the accurate of valid set is %f"%(accurate_res))
+        # valid process
+        if valid_idx % 20 == 0:
+            error_sum = 0
+            item_sum = 0
+            for vdx in xrange(n_valid):
+                valid_loss = compute_loss_fn(utils.wrap_x(valid_x[vdx]),
+                                             utils.expand_y(valid_y[vdx],43))
+                valid_error = compute_error_fn(utils.wrap_x(valid_x[vdx]),
+                                               utils.wrap_y(valid_y[vdx]))
+                item_sum += len(valid_y[vdx])
+                error_sum += valid_error
+            accurate_res = 0.
+            accurate_res = 1. - (error_sum  * 1. / item_sum)
+            logging.info("the accurate of valid set is %f"%(accurate_res))
     return
 
 def run_microblog_experiment():
