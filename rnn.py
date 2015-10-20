@@ -30,7 +30,9 @@ class RNN(object):
         """
 
         self.input_data = input_data
+        self.n_input = n_input
         self.n_hidden = n_hidden
+        self.n_output = n_output
 
         # recurrent weights as a shared variable
         W_h = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),

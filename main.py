@@ -82,7 +82,7 @@ def run_swda_experiment(load_data,
     #compute_gradients = theano.function(inputs=[x_var, y_var],
     #                                    outputs=gparams)
     train_loss_fn = theano.function(inputs=[model.input_var, y_var, lr_var],
-                                    outputs=cost,
+                                    outputs=[cost],
                                     updates=optimizer_updates)
 
     compute_loss_fn = theano.function(inputs=[model.input_var, y_var],

@@ -25,7 +25,7 @@ class RCNN(object):
                            window_sizes=window_sizes)
         self.rnn = rnn.RNN(input_data=self.cnn.output,
                            rng=rng,
-                           n_input = n_feature_maps*len(window_sizes),
+                           n_input=n_feature_maps*len(window_sizes),
                            n_hidden=n_hidden,
                            n_output=n_out,
                            activation=T.nnet.sigmoid,
