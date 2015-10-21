@@ -80,7 +80,7 @@ def gen_structured_data_from_utterances(filename):
 def load_utterance_dataset(train_pos, valid_pos):
     """
     """
-    thread_data =  gen_structured_data_from_utterances("../../data/utterances.txt")
+    thread_data =  gen_structured_data_from_utterances("../data/utterances.txt")
     print "load_utterance_dataset"
     sens = train_sen_flatten(thread_data)
 
