@@ -56,7 +56,7 @@ def run_swda_experiment(load_data,
         y_var = T.imatrix('y_var')
         lr_var = T.scalar('lr_var')
         label_var = T.vector('label_var')
-        cost = model.loss(model.y, y_var)
+        cost = model.loss(y_var, model.y)
         error = model.error(label_var, model.output_var)
     
     elif batch_type == "minibatch":

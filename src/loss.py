@@ -8,7 +8,7 @@ if theano.config.floatX == 'float64':
 else:
     epsilon = 1.0e-7
 
-def mean_binary_crossentropy(y_true, y_pred):
+def binary_crossentropy(y_true, y_pred):
     """
     calculate the binary cross entropy
 
@@ -16,7 +16,7 @@ def mean_binary_crossentropy(y_true, y_pred):
     -----------
 
     y_true: the prob distribution of actual output
-    type: theano.variable dtype=float32/64
+    type: theano.variable dtype=int32/int64
 
     y_pred: the prob distribution of predict output
     type: theano.variable dtype=float32/64
@@ -29,6 +29,13 @@ def mean_binary_crossentropy(y_true, y_pred):
     # y_pred = T.clip(y_pred, epsilon, 1-epsilon)
     #return T.nnet.binary_crossentropy(y_pred, y_true).mean(axis=-1)
     return T.mean(T.nnet.binary_crossentropy(y_pred, y_true))
+
+def nll_multiclass(y_true, y_pred):
+    """
+    """
+    
+
+    return -T.mean(T.log(y_pred)[T.arange(y_true.shape[0]), y_true])
 
 def mean_classify_error(label_true, label_pred):
     """

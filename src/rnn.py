@@ -91,7 +91,7 @@ class RNN(object):
 
         self.p_y_given_x_var = T.nnet.softmax(self.y_pred_var)
         self.output_var = T.argmax(self.p_y_given_x_var, axis=1)
-        self.loss = loss.mean_binary_crossentropy
+        self.loss = loss.binary_crossentropy
         self.error = loss.mean_classify_error
         ## ==== end function ===
         return
