@@ -42,16 +42,15 @@ def test_rnn():
                         n_hidden,
                         n_output)
 
-    cost_var = rnn_model.loss(rnn_model.p_y_given_x_var, y_var)
+    cost_var = rnn_model.loss(y_var, rnn_model.p_y_given_x_var)
     compute_loss_fn = theano.function(inputs=[input_var, y_var],
                                       outputs=[cost_var],
                                       mode="DebugMode")
     
-    cost = compute_loss_fn(seq_x, real_y)
-    pdb.set_trace()
-
+    cost = compute_loss_fn(seq_x, real_y) # example: [array(0.6847332)]
+    print "the cost of rnn is %f" %(cost[0])
     print "[RNN Test OK!]"
-    pass
+    return
 
 
 if __name__ == "__main__":
