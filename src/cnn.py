@@ -4,6 +4,7 @@ import theano
 import theano.tensor as T
 from theano.tensor.nnet import conv
 import numpy as np
+import utils
 
 class CNN(object):
 
@@ -59,6 +60,7 @@ class CNN(object):
 
 
         def _conv(word_vector):
+            word_vector = utils.get_var_with_mask(word_vector, 0.)
             word_matrix = word_vector.dimshuffle('x', 'x', 0, 1)
             h = None
 
@@ -76,6 +78,51 @@ class CNN(object):
                                        n_steps=self.input_data.shape[0],
                                        outputs_info=None)
         #pdb.set_trace()
+        return
+
+class CNN_OneStep(object):
+    """ the cnn with batch size=1
+    """
+
+    def __init__(self,
+                 input_var,
+                 dim,
+                 n_feature_maps,
+                 window_sizes):
+
+        self.input_var = input_var
+        self.dim = dim
+        self.n_feature_maps = n_feature_maps
+        self.window_sizes = window_sizes
+
+        self.params = []
+        self.cnn_weights = []
+        for ws in window_sizes:
+            cnn_weight = utils.shared_uniform((n_feature_maps, 1, ws, self.dim),
+                                              dtype=theano.config.floatX)
+            self.params.append(cnn_weight)
+            self.cnn_weights.append(cnn_weight)
+
+        self.b = utils.shared_zeros((self.n_feature_maps* len(self.window_sizes)), dtype=theano.config.floatX, name='b')
+        self.params.append(self.b)
+        return
+
+    def build_network(self):
+        word_matrix = self.input_var.dimshuffle('x', 'x', 0, 1)
+        h = None
+
+        for i in xrange(len(self.window_sizes)):
+            conv_out = conv.conv2d(input=word_matrix,
+                                   filters=self.cnn_weights[i])
+            max_out = T.max(conv_out, axis=2).flatten()
+
+            if h == None:
+                h = max_out
+            else:
+                h = T.concatenate([h, max_out])
+
+        # the dimension of h is len(window_sizes) * n_feature_maps
+        self.output = h + self.b
         return
 
 

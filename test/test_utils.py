@@ -5,6 +5,7 @@ import pdb
 
 sys.path.append("../src")
 import loss
+import utils
 
 def test_nll_multiclass():
 
@@ -12,7 +13,7 @@ def test_nll_multiclass():
     y_true_var = T.imatrix("y_true_var")
     #pdb.set_trace()
     cost_var = loss.nll_multiclass(y_true_var, y_pred_var)
-    
+
     seq_len = 5
     n_output = 3
     y_true = np.asarray(np.zeros((seq_len, n_output)), dtype=np.int32)
@@ -30,6 +31,7 @@ def test_nll_multiclass():
     print cost
 
     print "[Test nll_multiclass OK!]"
+    print "====="
     #print "[Test binary OK!]"
     return
 
@@ -60,7 +62,42 @@ def test_binary_loss():
     print "====="
     return
 
+def test_mask():
+    """
+    """
+    x_var = T.dtensor3('x_var')
+    mask_matrix = utils.get_mask(x_var, 0)
+    res_var = utils.get_var_with_mask(x_var, 0)
+
+    mask_fn = theano.function(inputs=[x_var],
+                              outputs=res_var)
+
+
+    # generate data
+    seq_len = 3
+    sen_len = 5
+    word_dim = 3
+
+    seq = []
+    for i in xrange(seq_len):
+        sen = []
+        for j in xrange(sen_len):
+            sen.append([1] * word_dim)
+        sen.append([0] * word_dim)
+        seq.append(sen)
+
+    seq_x = np.asarray(seq, dtype=theano.config.floatX)
+    print seq_x
+    print "--------- next after mask ---------------"
+    seq_x_mask = mask_fn(seq_x)
+    print seq_x_mask
+    print "[Test mask OK!]"
+
+
+    return
+
 
 if __name__ == "__main__":
     test_binary_loss()
-    test_nll_multiclass()
+    test_mask()
+    #test_nll_multiclass()

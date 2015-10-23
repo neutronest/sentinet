@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import theano
+import theano.tensor as T
 
 def wrap_x(x):
     """
@@ -40,11 +41,15 @@ def sharedX(X, dtype=theano.config.floatX, name=None):
     """
     return theano.shared(np.asarray(X, dtype=dtype), name=name)
 
-def uniform(shape, scale=0.05):
+
+def ndarray_uniform(shape, scale=0.05, dtype=theano.config.floatX):
+    return np.asarray(np.random.uniform(low=-scale, high=scale, size=(shape)), dtype=dtype)
+
+def shared_uniform(shape, scale=0.05, dtype=theano.config.floatX, name=None):
     """
     theano uniform generator
     """
-    return sharedX(np.random.uniform(low=-scale, high=scale, size=shape))
+    return sharedX(np.random.uniform(low=-scale, high=scale, size=shape), dtype=dtype, name=name)
 
 def shared_zeros(shape, dtype=theano.config.floatX, name=None):
     """
@@ -58,3 +63,16 @@ def shared_ones(shape, dtype=theano.config.floatX, name=None):
 
 def shared_scalar(value=0., dtype=theano.config.floatX, name=None):
     return sharedX(np.cast[dtype](value))
+
+
+def get_mask(x, mask_value):
+    """
+    return the crossponding Mask Matrix with input x
+    """
+    return T.any(T.ones_like(x) * (1. - T.eq(x, mask_value)), axis=-1)
+
+
+def get_var_with_mask(x, mask_value):
+    """
+    """
+    return x * T.shape_padright(get_mask(x, mask_value))

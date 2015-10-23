@@ -5,7 +5,11 @@ from vectorize import Vectorize
 import logging
 import numpy as np
 import theano
+import json
+from ..microblog import vectorize
+
 """
+============================ SWDA utterances ===============================
 
 All functions about utterances:
 
@@ -137,6 +141,87 @@ def load_utterance_dataset(train_pos, valid_pos):
     test_y = data_y[VALID_SET:]
     return (train_x, train_y, valid_x, valid_y, test_x, test_y)
 
+"""
+================  END SWDA utterances ==================================================
+
+================ BEGIN microblog data process ==========================================
+
+
+"""
+
+
+def generate_words_emb(words, vectorize):
+    """
+    """
+    words_emb = []
+    for word in words:
+        word_vector = vectorize.words_model[word]
+        words_emb.append(word_vector)
+
+    return np.asarray(words_emb, dtype=theano.config.floatX)
+
+def load_microblogdata(dir_path,
+                       train_indicators,
+                       valid_indicator,
+                       test_indicator):
+    """
+    load the microblog tree-structure dataset
+
+    Parameters:
+    ----------
+    dir_path: the root filedir of dataset
+        type: str
+
+    train_indicators: the selected data dirs that used for train dataet
+        type: tuple of int
+        example: (1,2,3)
+
+    valid_indicator: the selected data dir that used for valid dataset
+        type: int
+
+    tet_indicator:  the selected data dir that used for valid dataset
+        type: int
+    """
+
+    # vectorzie init
+    V = vectorize.Vectorize()
+    V.gen_words_vector("../data/weibo/weiboV2.tsv")
+
+
+
+    train_x = {}
+    train_y = {}
+    valid_x = {}
+    valid_y = {}
+    test_x = {}
+    test_y = {}
+
+    n_topics = 51
+    for i in train_indicators:
+        for topic_id in xrange(n_topics):
+            filepath = dir_path + "fold_" + str(i) + "/" + str(topic_id) + ".txt"
+            with open(filepath, "r") as train_ob:
+                for line in train_ob:
+                    line = line.strip()
+                    line_json = json.loads(line)
+
+                    # parse the conponent
+                    threadid = str(line_json['threadid'])
+                    words = str(line_json['words'])
+                    words_emb = generate_words_emb(words, V)
+                    label = int(line_json['label'])
+
+    return
+
+
+"""
+================ END microblog data process ============================================
+"""
+
+
+
+
+
 def gen_structured_xy(thread_data):
     """
     """
@@ -162,6 +247,3 @@ def train_sen_flatten(thread_data):
         for k, v in sen_dict.items():
             sens.append(v[1])
     return sens
-
-if __name__ == "__main__":
-    load_utterance_dataset(1000, 1005)

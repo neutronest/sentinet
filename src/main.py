@@ -44,8 +44,8 @@ def run_swda_experiment(load_data,
     y_var = None
     lr_var = None
     label_var = None
-    cost = None
-    error = None
+    cost_var = None
+    error_var = None
     # optimizer define
     gparams = None
     optimizer_updates = OrderedDict()
@@ -56,33 +56,31 @@ def run_swda_experiment(load_data,
         y_var = T.imatrix('y_var')
         lr_var = T.scalar('lr_var')
         label_var = T.vector('label_var')
-        cost = model.loss(y_var, model.y)
-        error = model.error(label_var, model.output_var)
-    
+        cost_var = model.loss(y_var, model.y)
+        error_var = model.error(label_var, model.output_var)
+    """
     elif batch_type == "minibatch":
         logging.info("the batch type is minibatch")
         y_var = [T.imatrix()] * batch_size
         label_var = [T.vector()] * batch_size
-        cost = None
+        cost_var = None
         for i in xrange(0, batch_size):
-            cost += model.loss(model.y, y_var[i])
+            cost_var += model.loss(model.y, y_var[i])
         lr_var = T.scalar("lr_var")
-
+    """
     
     if optimizer == "sgd":
-        gparams = [T.grad(cost, param_var) for param_var in model.params]
+        print "using sgd for optimization"
+        logging.info("using sgd for optimization")
+        gparams = [T.grad(cost_var, param_var) for param_var in model.params]
         optimizer_updates = [(param, param - gparam * lr_var) \
             for param, gparam in zip(model.params, gparams)]
-        """
-        for param, gparam in zip(model.params, gparams):
-            ugd = - gparam * lr_var
-            optimizer_updates[param] = param + ugd
-        """
+
 
     #compute_gradients = theano.function(inputs=[x_var, y_var],
     #                                    outputs=gparams)
     train_loss_fn = theano.function(inputs=[model.input_var, y_var, lr_var],
-                                    outputs=[cost],
+                                    outputs=cost,
                                     updates=optimizer_updates)
 
     compute_loss_fn = theano.function(inputs=[model.input_var, y_var],
@@ -292,8 +290,8 @@ if __name__ == "__main__":
         assert(rnn_n_out != None)
 
         run_model = rcnn.RCNN(rng=np.random.RandomState(54321),
-                           dim=word_dim,
                            input_data=x_var,
+                           dim=word_dim,
                            n_feature_maps=cnn_n_feature_maps,
                            window_sizes=cnn_window_sizes,
                            n_hidden=rnn_n_hidden,

@@ -5,7 +5,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 import loss
-from utils import sharedX, uniform, shared_zeros, shared_ones
+import utils
 
 class RNN(object):
     """
@@ -62,7 +62,7 @@ class RNN(object):
 
         self.params = [self.W_h, self.W_in, self.W_out, self.h0,
                        self.bh, self.by]
-                       
+
         # for every parameter, we maintain it's last update
         # the idea here is to use "momentum"
         # keep moving mostly in the same direction
@@ -95,6 +95,87 @@ class RNN(object):
         self.error = loss.mean_classify_error
         ## ==== end function ===
         return
+
+
+class RNN_OneStep(object):
+    """ the simple RNN without "scan".
+    """
+
+    def __init__(self,
+                 input_var,
+                 n_input,
+                 n_hidden,
+                 n_output,
+                 h_tm1):
+        """
+        the init
+
+        Parameters:
+        -----------
+        input_var: the input theano variable
+            type: theano tensor of dvector
+
+        n_input: the size of input layer
+            type: int
+
+        n_hidden: the size of hidden layer
+            type: int
+
+        n_output: the sizs of output layer
+            type: int
+
+        h_tm1: the previous hidden theano tensor variable
+            type: theano variable of dvector
+        """
+
+        self.input_var = input_var
+        self.n_input = n_input
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+        self.h_tm1 = h_tm1
+        # weight define
+        self.W_input = utils.shared_uniform((n_input, n_hidden),
+                                     dtype=theano.config.floatX,
+                                     name='W_in')
+        self.W_hidden = utils.shared_uniform((n_hidden, n_hidden),
+                                      dtype=theano.config.floatX,
+                                      name='W_hidden')
+        self.W_output = utils.shared_uniform((n_hidden, n_output),
+                                      dtype=theano.config.floatX,
+                                      name='W_output')
+
+        self.b_h = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='bh')
+        self.b_y = utils.shared_zeros((n_output,),
+                                      dtype=theano.config.floatX,
+                                      name='by')
+
+        self.params = [self.W_input, self.W_hidden, self.W_output,
+                       self.b_h, self.b_y]
+
+        return
+
+    def _recurrent(self, x_t, h_pre):
+        h_t = T.nnet.sigmoid(T.dot(x_t, self.W_input) + T.dot(h_pre, self.W_hidden) + self.b_h)
+        y_t = T.dot(h_t, self.W_output) + self.b_y
+        return h_t, y_t
+
+    def build_network(self):
+
+        self.h, self.y_t = self._recurrent(self.input_var, self.h_tm1)
+        self.y_pred = T.nnet.softmax(self.y_t)
+        self.output = T.argmax(self.y_pred, axis=1)
+        self.loss = loss.binary_crossentropy
+        self.error = loss.mean_classify_error
+        return
+
+    # end RNN_OneStep ===================================
+
+
+
+
+
 
 class RNN_LSTM(object):
     """
