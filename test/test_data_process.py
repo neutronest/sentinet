@@ -10,13 +10,11 @@ sys.path.append("../src")
 import data_process
 
 
-microblog_dir_path = "/Users/neutronest/projects/IDRC/rnn-sunsang/sentinet/data/weibo/fold_data/"
+microblog_dir_path = "../data/weibo/fold_data/"
 
 def test_load_microblog():
-    data_process.load_microblogdata(microblog_dir_path,
-                                    (1,2,3),
-                                    4,
-                                    5)
+    (train_x, train_y, valid_x, valid_y, test_x, test_y) = data_process.load_microblogdata(microblog_dir_path, (0, 1, 2), 3, 4)
+    pdb.set_trace()
     return
 
 if __name__ == "__main__":

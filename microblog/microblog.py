@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
 import vec_config
-import utils
-from vectorize import Vectorize
+import mutils
+from mvectorize import Vectorize
 import operator
 import word_cutting
 from itertools import izip
@@ -85,10 +85,10 @@ def get_line_thread_topic():
     # init
     # one topic one file
 
-    vectorize = Vectorize()
-    vectorize.dict_init_from_file()
-    vectorize.gen_words_vector(weibo_path + "weiboV2.tsv")
-    vectorize.gen_words_doc(weibo_path + "weiboV2.tsv")
+    mvectorize = MVectorize()
+    mvectorize.dict_init_from_file()
+    mvectorize.gen_words_vector(weibo_path + "weiboV2.tsv")
+    mvectorize.gen_words_doc(weibo_path + "weiboV2.tsv")
     lines_of_topic = {} # key: int, value: [[..], [..] ..]
     lines_of_topic_train = {}
     lines_of_topic_test = {}

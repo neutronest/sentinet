@@ -3,6 +3,11 @@ import numpy as np
 import theano
 import theano.tensor as T
 
+
+"""
+==================== theano operation
+"""
+
 def wrap_x(x):
     """
 
