@@ -7,6 +7,7 @@ import optimizer
 import data_process
 import logging
 import theano, theano.tensor as T
+import theano.typed_list
 import numpy as np
 import random
 from collections import OrderedDict
@@ -43,7 +44,7 @@ def run_microblog_experiment(load_data,
         h_pre_var = rcnn_onestep_model.h_pre_var
 
         # gradient update VARIABLE
-        gradient_var =
+        gradient_var_list = typed_list.TypedListType()
 
 
 
