@@ -152,14 +152,17 @@ def load_utterance_dataset(train_pos, valid_pos):
 """
 
 ERROR_FIND = 0
+SUCCESS_FIND = 0
 
 def generate_words_emb(words, mvectorize):
     """
     """
     global ERROR_FIND
+    global SUCCESS_FIND
     words_emb = []
     for word in words:
         try:
+            SUCCESS_FIND += 1
             word_vector = mvectorize.words_model[word]
             words_emb.append(word_vector)
         except:
@@ -167,10 +170,12 @@ def generate_words_emb(words, mvectorize):
             ERROR_FIND += 1
             continue
 
-    if len(words) == 0:
+    if len(words_emb) < 5:
+        remain_dim = 5 - len(words_emb)
         # TODO: use 300 here is MAGIC! Need to touch
-        word_vector = np.asarray(np.zeros((300,1), dtype=theano.config.floatX))
-        words_emb.append(word_vector)
+        for i in xrange(remain_dim):
+            word_vector = np.asarray(np.zeros((300,), dtype=theano.config.floatX))
+            words_emb.append(word_vector)
     return np.asarray(words_emb, dtype=theano.config.floatX)
 
 
@@ -287,7 +292,9 @@ def load_microblogdata(train_indicators,
                                             test_x,
                                             test_y)
     global ERROR_FIND
+    global SUCCESS_FIND
     print "word_vector not found: %d" %(ERROR_FIND)
+    print "word_vector found: %d"%(SUCCESS_FIND)
     return (train_x, train_y, valid_x, valid_y, test_x, test_y)
 
 

@@ -51,7 +51,7 @@ def run_microblog_experiment(load_data,
         y_label_var = T.scalar('y_label_var')
         h_pre_var = model.h_pre_var
         cost_var = model.loss(y_true_var, model.y_pred)
-
+        error_var = model.error(y_label_var, model.output_var)
 
         train_fn = None # need to define
         compute_loss = None
@@ -77,6 +77,11 @@ def run_microblog_experiment(load_data,
                                                        y_true_var,
                                                        model.h_pre_var],
                                                outputs=cost_var)
+            compute_error_fn = theano.function(inputs=[model.input_var,
+                                                       y_label_var,
+                                                       model.h_pre_var],
+                                                outputs=[error_var, model.output_var])
+
         #cost_var = rcnn_onestep_model.loss(y_true_minibatch, y_pred_minibatch)
         epoch = 0
         train_idx = 0
@@ -86,6 +91,7 @@ def run_microblog_experiment(load_data,
             epoch += 1
             for (train_kx, train_vx), (train_ky, train_vy) in zip(train_x.items(), train_y.items()):
                 # get each thread
+                #logging.info("---next thread---")
                 assert(train_kx == train_ky)
                 threadid = train_kx
                 n_sens = len(train_vx)
@@ -104,17 +110,25 @@ def run_microblog_experiment(load_data,
 
                     # prepare input
                     input_x = words_emb
+                    print words_emb
                     input_y = np.asarray([1 if i == label else 0  for i in xrange(3)], dtype=np.int32)
                     h_tm1 = h_state[parent]
                     train_loss = train_fn(input_x, input_y, h_state[parent])
-                    logging.info("the train loss of train idx %d is: %f" %(train_idx, train_loss))
+                    #logging.info("the train loss of train idx %d is: %f" %(train_idx, train_loss))
                     # TODO:
                     train_idx += 1
                     if train_idx % valid_frequency == 0:
                         valid_idx = train_idx / valid_frequency
+                        
+                        # statistic value
                         cost_res = 0.
                         cost_sum = 0.
+                        error_sum = 0.
+                        error_res = 0.
                         n_cost = 0
+                        valid_recall = {}
+                        for i in xrange(3):
+                            valid_recall[i] = 0
 
                         logging.info("[===== began to idx %d validation =====]"%(valid_idx))
                         # VALID PROCESS
@@ -140,10 +154,24 @@ def run_microblog_experiment(load_data,
                                 input_y = np.asarray([1 if i == label else 0 for i in xrange(3)], dtype=np.int32)
                                 h_tm1 = h_state[parent]
                                 valid_loss = compute_loss_fn(input_x, input_y, h_tm1)
+                                [error, label_pred] = compute_error_fn(input_x, label, h_tm1)
+                                label_pred = int(label_pred)
+                                valid_recall[label_pred] += 1
+                                error_sum += error
                                 cost_sum += valid_loss
                         cost_res = cost_sum / n_cost
+                        error_res = error_sum / n_cost
                         logging.info("[IMPORTANT: the loss of valid-idx %d is: %f ======]" %(valid_idx, cost_res))
-        """
+                        logging.info("[IMPORTANT: the error of valid-idx %d is: %f ======]" %(valid_idx, error_res))
+                        logging.info("[IMPORTANT: the negative num of predict: %d]"%(valid_recall[0]))
+                        logging.info("[IMPORTANT: the neutral num of predict: %d]"%(valid_recall[1]))
+                        logging.info("[IMPORTANT: the positive num of predict: %d]"%(valid_recall[2]))
+
+
+        
+
+        """             
+
         -------------------------------- END rcnn_onestep_model -----------------------
         """
 

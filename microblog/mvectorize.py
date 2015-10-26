@@ -35,9 +35,10 @@ class MVectorize(object):
         texts = mutils.get_text_only_from_lines(lines)
         text_filters = []
         for text in texts:
+            text_filter = ""
             emoji_list, text_filter = word_cutting.filter_emoji_from_textV2(text)
-            mention_list, text_filter = word_cutting.filter_syntax_from_textV2(text, '@')
-            hashtag_list, text_filter = word_cutting.filter_syntax_from_textV2(text, '#')
+            mention_list, text_filter = word_cutting.filter_syntax_from_textV2(text_filter, '@')
+            hashtag_list, text_filter = word_cutting.filter_syntax_from_textV2(text_filter, '#')
             text_filters.append(text_filter)
         words_doc = []
 
@@ -51,9 +52,11 @@ class MVectorize(object):
         """
         """
         words_doc = self.gen_words(file_path)
-
-        print "generate word vectors model!"
-        self.words_model = Word2Vec(words_doc, size=300, window=5, min_count=1, workers=4)
+        words_num = len([w for words in words_doc for w in words])
+        print "[---the words_num of model is %d---]"%(words_num)
+        print "[---generate word vectors model!---]"
+        self.words_model = Word2Vec(words_doc, size=300, window=10, min_count=1, workers=4)
+        print "[--- word embedding model Done! ---]"
         return
 
     def gen_words_doc(self, file_path):

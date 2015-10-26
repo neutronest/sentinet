@@ -89,7 +89,7 @@ def get_text_only_from_lines(lines):
     texts = []
     for line in lines:
         data = line.split("\t")
-        texts.append(data[3])
+        texts.append(data[4])
     return texts
 
 def write_to_file(data, file_name):

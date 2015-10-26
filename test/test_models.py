@@ -31,6 +31,7 @@ def test_rcnn_onestep():
     # param
     input_var = T.dmatrix('input_var')
     y_var = T.ivector('y_var')
+    label_var = T.scalar('label_var')
     cnn_feature_maps = 300
     cnn_window_sizes = (2,3,4)
     rnn_hidden = 300
@@ -45,11 +46,17 @@ def test_rcnn_onestep():
                                        rnn_output,
                                        h_tm1)
     cost_var = rcnn_onestep_model.loss(y_var, rcnn_onestep_model.y_pred)
+    error_var = rcnn_onestep_model.error(label_var, rcnn_onestep_model.output_var)
     compute_cost_fn = theano.function(inputs=[input_var, y_var, h_tm1],
                                       outputs=[cost_var, rcnn_onestep_model.h])
+    compute_error_fn = theano.function(inputs=[input_var, label_var, h_tm1],
+                                       outputs=[error_var, rcnn_onestep_model.output_var])
 
     [cost, h_current] = compute_cost_fn(sen_x, y_true, h_0)
+    [error, label_pred] = compute_error_fn(sen_x, 1, h_0)
     print "the cost of rcnn_model_onestep is %f"%(cost)
+    print "the error of rcnn_model_onestep is %d"%(error)
+    print "the predict label of rcnn_model_onestep is %d"%(label_pred)
     print "the current h of rcnn_model_onestep is :"
     print h_current
     print "[Test rcnn_model_onestep OK!]"

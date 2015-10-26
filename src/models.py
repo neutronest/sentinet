@@ -37,6 +37,7 @@ class RCNN_OneStep(object):
         self.rnn_onestep_model.build_network()
         self.h = self.rnn_onestep_model.h
         self.loss = self.rnn_onestep_model.loss
+        self.error = self.rnn_onestep_model.error
         self.y_pred = self.rnn_onestep_model.y_pred
-        self.output = self.rnn_onestep_model.output
+        self.output_var = self.rnn_onestep_model.output_var
         return
