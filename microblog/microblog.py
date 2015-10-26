@@ -2,7 +2,7 @@
 import json
 import vec_config
 import mutils
-from mvectorize import Vectorize
+from mvectorize import MVectorize
 import operator
 import word_cutting
 from itertools import izip
@@ -62,7 +62,6 @@ def get_json_from_line(line, vectorize):
 
     # words and bigram ( or trigram )
     words = word_cutting.cut_directly(text)
-    print " ".join(words)
     json_of_line = {}
     json_of_line['topicid'] = topicid
     json_of_line['threadid'] = threadid
@@ -114,7 +113,7 @@ def get_line_thread_topic():
 
             # main process here !!!!!!!!!!!!!
             # =============================================
-            json_of_line = get_json_from_line(line, vectorize)
+            json_of_line = get_json_from_line(line, mvectorize)
             # =============================================
 
             if json_of_line == None:

@@ -13,14 +13,29 @@ class SGD(object):
     def __init__(self,
                  learning_rate=0.01,
                  momentum=0.,
-                 decay=0.):
+                 decay=0.99):
         """
         """
 
         self.updates = []
-        self.gparams_acc = []
+        self.gparams_acc = None
         self.lr_var = shared_scalar(learning_rate)
         self.momentum_var = shared_scalar(momentum)
+
+
+    def gparams_update(self, gparams):
+
+        if self.gparams_acc == None:
+            self.gparams_acc = gparams
+        else:
+            self.gparams_acc = [gparam_acc + gparam for (gparam_acc, gparam) in zip(self.gparams_acc, gparams)]
+        return self.gparams_acc
+
+    def param_update(self, param_var, gparam_var):
+        ugd = - gparam_var * self.lr_var
+        param_var += ugd
+        return param_var
+
 
     def get_gradients(self, loss_var, params_var_list):
         """

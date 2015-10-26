@@ -151,17 +151,26 @@ def load_utterance_dataset(train_pos, valid_pos):
 
 """
 
+ERROR_FIND = 0
 
 def generate_words_emb(words, mvectorize):
     """
     """
+    global ERROR_FIND
     words_emb = []
     for word in words:
         try:
             word_vector = mvectorize.words_model[word]
             words_emb.append(word_vector)
         except:
+            #print "[ERROR FIND]"
+            ERROR_FIND += 1
             continue
+
+    if len(words) == 0:
+        # TODO: use 300 here is MAGIC! Need to touch
+        word_vector = np.asarray(np.zeros((300,1), dtype=theano.config.floatX))
+        words_emb.append(word_vector)
     return np.asarray(words_emb, dtype=theano.config.floatX)
 
 
@@ -196,10 +205,10 @@ def generate_threads(file_path, mvectorize, data_x, data_y):
             threadid = str(line_json['threadid'])
             docid = str(line_json['docid'])
             parent = str(line_json['parent'])
-            words = str(line_json['words'])
+            words = line_json['words']
             words_emb = generate_words_emb(words, mvectorize)
-            label = int(line_json['label'])
 
+            label = int(line_json['label'])
             cur_item_x = (docid, parent, words_emb)
             cur_item_y = (docid, label)
             if data_x.get(threadid) == None:
@@ -277,6 +286,8 @@ def load_microblogdata(train_indicators,
                                             mv,
                                             test_x,
                                             test_y)
+    global ERROR_FIND
+    print "word_vector not found: %d" %(ERROR_FIND)
     return (train_x, train_y, valid_x, valid_y, test_x, test_y)
 
 

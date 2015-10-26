@@ -35,14 +35,14 @@ class MVectorize(object):
         texts = mutils.get_text_only_from_lines(lines)
         text_filters = []
         for text in texts:
-            emoji_list, text_filter = word_cutting.filter_emoji_from_text(text)
-            mention_list, text_filter = word_cutting.filter_syntax_from_text(text, '@')
-            hashtag_list, text_filter = word_cutting.filter_syntax_from_text(text, '#')
+            emoji_list, text_filter = word_cutting.filter_emoji_from_textV2(text)
+            mention_list, text_filter = word_cutting.filter_syntax_from_textV2(text, '@')
+            hashtag_list, text_filter = word_cutting.filter_syntax_from_textV2(text, '#')
             text_filters.append(text_filter)
         words_doc = []
 
         for text in text_filters:
-            words = word_cutting.cut(text)
+            words = word_cutting.cut_directly(text)
             words_doc.append(words)
 
         return words_doc

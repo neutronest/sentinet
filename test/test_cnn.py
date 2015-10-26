@@ -59,7 +59,7 @@ def test_cnn_onestep():
                                         window_sizes)
     cnn_onestep_model.build_network()
     compute_output_fn = theano.function(inputs=[input_var],
-                                        outputs=\cnn_onestep_model.output)
+                                        outputs=cnn_onestep_model.output)
 
     o = compute_output_fn(sen_x)
     print "the output of cnn_onestep is: "

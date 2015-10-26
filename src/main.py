@@ -23,7 +23,8 @@ def run_microblog_experiment(load_data,
                              batch_type,
                              batch_size,
                              n_epochs,
-                             optimizer="sgd"):
+                             valid_frequency,
+                             optimizer_method="sgd"):
     """ the microblog experiment
 
 
@@ -34,48 +35,123 @@ def run_microblog_experiment(load_data,
     n_train = len(train_x)
     n_valid = len(valid_x)
     n_test = len(test_x)
-
+    logging.info("[==== Data Size description]")
+    logging.info("[the train seqs size is %d]"%(n_train))
+    logging.info("[the valid seqs size is %d]"%(n_valid))
+    logging.info("[the test seqs size is %d]"%(n_test))
 
     # CHOOSE MODEL
     if model_name == "rcnn_onestep_model":
+        """
+        ------------------  rcnn_onestep_model ------------------
+        """
         # DEFINE VARIABLE
+        logging.info("[rcnn_onestep_model experiment began!]")
         y_true_var = T.ivector('y_true_var')
         y_label_var = T.scalar('y_label_var')
-        h_pre_var = rcnn_onestep_model.h_pre_var
-
-        # gradient update VARIABLE
-        gradient_var_list = typed_list.TypedListType()
+        h_pre_var = model.h_pre_var
+        cost_var = model.loss(y_true_var, model.y_pred)
 
 
+        train_fn = None # need to define
+        compute_loss = None
+        if batch_type == "one":
+            # sgd
+            logging.info("[Using mini-one batch size!]")
+            logging.info("[optimizer difine!]")
+            sgd = optimizer.SGD() # use default learning_rate
+            gparam_var_list = [T.grad(cost_var, param_var) for param_var in model.params]
+            optimize_updates = {}
+            for (param, gparam) in zip(model.params, gparam_var_list):
+                optimize_updates[param] = sgd.param_update(param, gparam)
 
+            # update params
+            logging.info("[train and compute loss function define!]")
+            train_fn = theano.function(inputs=[model.input_var,
+                                               y_true_var,
+                                               model.h_pre_var
+                                           ],
+                                       outputs=cost_var,
+                                       updates=optimize_updates)
+            compute_loss_fn = theano.function(inputs=[model.input_var,
+                                                       y_true_var,
+                                                       model.h_pre_var],
+                                               outputs=cost_var)
+        #cost_var = rcnn_onestep_model.loss(y_true_minibatch, y_pred_minibatch)
         epoch = 0
-        batch_idx = 0
+        train_idx = 0
         while epoch < n_epochs:
+            logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
+            train_idx = 0
             epoch += 1
-
-            for (train_kx, train_vx), (train_ky, train_vy) in zip(train_x, train_y):
+            for (train_kx, train_vx), (train_ky, train_vy) in zip(train_x.items(), train_y.items()):
                 # get each thread
                 assert(train_kx == train_ky)
-                threadid = kx
+                threadid = train_kx
                 n_sens = len(train_vx)
                 # we must store the each node's hidden vector
                 h_state = {}
+                h_state['-1'] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
                 for item_x, item_y in zip(train_vx, train_vy):
                     # get each sentence
                     (docid_x, parent, words_emb) = item_x
                     (docid_y, label) = item_y
+                    ### TODO: DEBUG
+                    print words_emb.shape
                     assert(docid_x == docid_y)
                     if h_state.get(docid_x) == None:
-                        h_state[docid_x] = utils.ndarray_uniform((model.word_dim), 0.01, theano.config.floatX)
+                        h_state[docid_x] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
 
+                    # prepare input
+                    input_x = words_emb
+                    input_y = np.asarray([1 if i == label else 0  for i in xrange(3)], dtype=np.int32)
+                    h_tm1 = h_state[parent]
+                    train_loss = train_fn(input_x, input_y, h_state[parent])
+                    logging.info("the train loss of train idx %d is: %f" %(train_idx, train_loss))
                     # TODO:
+                    train_idx += 1
+                    if train_idx % valid_frequency == 0:
+                        valid_idx = train_idx / valid_frequency
+                        cost_res = 0.
+                        cost_sum = 0.
+                        n_cost = 0
 
-                    batch_idx += 1
-                    if batch_idx % batch_size == 0:
+                        logging.info("[===== began to idx %d validation =====]"%(valid_idx))
                         # VALID PROCESS
-                        for (valid_kx, valid_vx), (valid_ky, valid_vy) in zip(valid_x, valid_y):
+                        for (valid_kx, valid_vx), (valid_ky, valid_vy) in zip(valid_x.items(), valid_y.items()):
+                            # EACH THREAD
                             # TODO: CHECK VALID
+                            # check threadid
+                            assert(valid_kx == valid_ky)
+                            threadid = valid_kx
+                            n_sens = len(valid_vx)
+                            n_cost += n_sens
+                            h_state = {}
+                            h_state['-1'] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
+                            for item_x, item_y in zip(valid_vx, valid_vy):
+                                # get each valid sentence
+                                (docid_x, parent, words_emb) = item_x
+                                (docid_y, label) = item_y
+                                assert(docid_x == docid_y)
+                                if h_state.get(docid_x) == None:
+                                    h_state[docid_x] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
 
+                                input_x = words_emb
+                                input_y = np.asarray([1 if i == label else 0 for i in xrange(3)], dtype=np.int32)
+                                h_tm1 = h_state[parent]
+                                valid_loss = compute_loss_fn(input_x, input_y, h_tm1)
+                                cost_sum += valid_loss
+                        cost_res = cost_sum / n_cost
+                        logging.info("[IMPORTANT: the loss of valid-idx %d is: %f ======]" %(valid_idx, cost_res))
+        """
+        -------------------------------- END rcnn_onestep_model -----------------------
+        """
+
+
+
+        """
+        -------------------------------- other model
+        """
     return
 
 """
@@ -149,14 +225,14 @@ def run_swda_experiment(load_data,
     #compute_gradients = theano.function(inputs=[x_var, y_var],
     #                                    outputs=gparams)
     train_loss_fn = theano.function(inputs=[model.input_var, y_var, lr_var],
-                                    outputs=cost,
+                                    outputs=cost_var,
                                     updates=optimizer_updates)
 
     compute_loss_fn = theano.function(inputs=[model.input_var, y_var],
-                                      outputs=cost,
+                                      outputs=cost_var,
                                       mode="DebugMode")
     compute_error_fn = theano.function(inputs=[model.input_var, label_var],
-                                       outputs=cost,
+                                       outputs=cost_var,
                                        mode="DebugMode")
 
     print "begin to train"
@@ -255,7 +331,7 @@ if __name__ == "__main__":
         "train_pos=",
         "valid_pos=",
         "test_pos=",
-        "test_pos="])
+        "valid_frequency="])
 
     for opt, arg in options:
         print (opt, arg)
@@ -308,7 +384,7 @@ if __name__ == "__main__":
             # example of arg: 0.01 of str
             learning_rate = float(arg)
 
-        elif opt == "--Batch_type":
+        elif opt == "--batch_type":
             # example of arg: all/minibatch
             batch_type = arg
 
@@ -322,11 +398,19 @@ if __name__ == "__main__":
 
         elif opt == "--train_pos":
             # example of arg: 1000 of str
-            train_pos = int(arg)
-
+            if '@' not in arg:
+                train_pos = int(arg)
+            else:
+                train_pos = tuple([int(t) for t in arg.split("@")])
         elif opt == "--valid_pos":
             # example of arg: 1005 of str
             valid_pos = int(arg)
+
+        elif opt == "--test_pos":
+            test_pos = int(arg)
+        elif opt=="--valid_frequency":
+            valid_frequency = int(arg)
+
 
     # define log file
     print "prepare the logging file"
@@ -351,7 +435,8 @@ if __name__ == "__main__":
         # TODO: other dataset
         x_var = T.dtensor3('x_var')
     elif dataset_name == "microblog":
-        load_data = data_process.load_micrologdata(train_pos, valid_pos, test_pos)
+        logging.info("loading microblog data now!")
+        load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos)
         x_var = T.dmatrix('x_var')
 
 
@@ -385,7 +470,8 @@ if __name__ == "__main__":
         logging.info("n_out: %d" % (rnn_n_output))
 
     # TODO: other models!
-    elif model_name == "rcnn_onestep":
+    elif model_name == "rcnn_onestep_model":
+        logging.info("define rcnn_onestep model now")
         assert(word_dim != None)
         assert(cnn_n_feature_maps != None)
         assert(cnn_window_sizes != None)
@@ -400,12 +486,19 @@ if __name__ == "__main__":
                                         rnn_n_hidden,
                                         rnn_n_output,
                                         h_pre_var)
-
+        logging.info("model description:")
+        logging.info("==================")
+        logging.info("model type: rcnn_onestep model")
+        logging.info("n_feature_maps: %d" %(cnn_n_feature_maps))
+        logging.info("window_sizes: {}".format(cnn_window_sizes))
+        logging.info("n_hidden: %d" % (rnn_n_hidden))
+        logging.info("n_out: %d" % (rnn_n_output))
     # begin to experiment
     assert(run_model != None)
     assert(load_data != None)
     assert(batch_type != None)
     assert(batch_size != None)
+    assert(valid_frequency != None)
     if experiment == "swda":
         run_swda_experiment(load_data,
                             run_model,
@@ -413,12 +506,14 @@ if __name__ == "__main__":
                             batch_size,
                             "sgd")
     elif experiment == "microblog":
+        logging.info("begin to microblog experiment")
         run_microblog_experiment(load_data,
                                  run_model,
                                  model_name,
                                  batch_type,
                                  batch_size,
                                  n_epochs,
+                                 valid_frequency,
                                  "sgd")
     # different dataset has different variable types
     # dtensor3, imatrix

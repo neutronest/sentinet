@@ -6,7 +6,7 @@ from theano.tensor.nnet import conv
 import numpy as np
 import sys
 sys.path.append("../src")
-import uitls
+import utils
 
 def generate_test_data_onestep():
     """

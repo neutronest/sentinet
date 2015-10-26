@@ -29,7 +29,11 @@ class RCNN_OneStep(object):
                                            rnn_hidden,
                                            rnn_output,
                                            h_tm1)
+        self.params = self.cnn_onestep_model.params + self.rnn_onestep_model.params
+        self.input_var = input_var
         self.h_pre_var = h_tm1
+        self.word_dim = word_dim
+        self.rnn_hidden = rnn_hidden
         self.rnn_onestep_model.build_network()
         self.h = self.rnn_onestep_model.h
         self.loss = self.rnn_onestep_model.loss
