@@ -59,9 +59,9 @@ def get_json_from_line(line, vectorize):
     emoji_list, text = word_cutting.filter_emoji_from_textV2(text)
     mention_list, text = word_cutting.filter_syntax_from_textV2(text, "@")
     hashtag_list, text = word_cutting.filter_syntax_from_textV2(text, "#")
-
     # words and bigram ( or trigram )
     words = word_cutting.cut_directly(text)
+
     json_of_line = {}
     json_of_line['topicid'] = topicid
     json_of_line['threadid'] = threadid
@@ -178,4 +178,5 @@ def generate_microblog():
     return
 
 if __name__ == "__main__":
+    word_cutting.load_thirdparty_words("../dict/favourate.txt")
     generate_microblog()
