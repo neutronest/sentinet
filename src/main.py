@@ -53,44 +53,36 @@ def run_microblog_experiment(load_data,
         cost_var = model.loss(y_true_var, model.y_pred)
         error_var = model.error(y_label_var, model.output_var)
 
-        train_fn = None # need to define
-        compute_loss = None
-        if batch_type == "one":
-            # sgd
-            logging.info("[Using mini-one batch size!]")
-            logging.info("[optimizer difine!]")
-            sgd = optimizer.SGD() # use default learning_rate
-            gparam_var_list = [T.grad(cost_var, param_var) for param_var in model.params]
-            optimize_updates = {}
-            for (param, gparam) in zip(model.params, gparam_var_list):
-                optimize_updates[param] = sgd.param_update(param, gparam)
 
-            # update params
-            logging.info("[train and compute loss function define!]")
-            train_fn = theano.function(inputs=[model.input_var,
-                                               y_true_var,
-                                               model.h_pre_var
-                                           ],
-                                       outputs=cost_var,
-                                       updates=optimize_updates)
-            compute_loss_fn = theano.function(inputs=[model.input_var,
-                                                       y_true_var,
-                                                       model.h_pre_var],
-                                               outputs=cost_var)
-            compute_error_fn = theano.function(inputs=[model.input_var,
-                                                       y_label_var,
-                                                       model.h_pre_var],
-                                                outputs=[error_var, model.output_var])
+        # optimizer define
+        logging.info("[minibatch used]")
+        logging.info("[optimizer define!]")
+        opt = optimizer.SGD(learning_rate=0.05)
+        opt.delta_pre_init(model.params)
 
-        #cost_var = rcnn_onestep_model.loss(y_true_minibatch, y_pred_minibatch)
+        gparams_var_list = T.grad(cost_var, model.params)
+
+        compute_gparams_fn = theano.function(inputs=[model.input_var,
+                                                     y_true_var,
+                                                     model.h_pre_var],
+                                             outputs=gparams_var_list)
+        compute_loss_fn = theano.function(inputs=[model.input_var,
+                                                  y_true_var,
+                                                  model.h_pre_var],
+                                          outputs=[cost_var, model.h])
+        compute_error_fn = theano.function(inputs=[model.input_var,
+                                                   y_label_var,
+                                                   model.h_pre_var],
+                                           outputs=[error_var, model.output_var])
+        seq_idx = 0
+        valid_idx = 0
         epoch = 0
-        train_idx = 0
         while epoch < n_epochs:
             logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
-            train_idx = 0
+            seq_idx = 0
             epoch += 1
             for (train_kx, train_vx), (train_ky, train_vy) in zip(train_x.items(), train_y.items()):
-                # get each thread
+                # EACH THREAD
                 #logging.info("---next thread---")
                 assert(train_kx == train_ky)
                 threadid = train_kx
@@ -103,74 +95,78 @@ def run_microblog_experiment(load_data,
                     (docid_x, parent, words_emb) = item_x
                     (docid_y, label) = item_y
                     ### TODO: DEBUG
-                    print words_emb.shape
                     assert(docid_x == docid_y)
+                    """
                     if h_state.get(docid_x) == None:
                         h_state[docid_x] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
-
+                    """
                     # prepare input
                     input_x = words_emb
-                    print words_emb
                     input_y = np.asarray([1 if i == label else 0  for i in xrange(3)], dtype=np.int32)
-                    h_tm1 = h_state[parent]
-                    train_loss = train_fn(input_x, input_y, h_state[parent])
-                    #logging.info("the train loss of train idx %d is: %f" %(train_idx, train_loss))
-                    # TODO:
-                    train_idx += 1
-                    if train_idx % valid_frequency == 0:
-                        valid_idx = train_idx / valid_frequency
-                        
-                        # statistic value
-                        cost_res = 0.
-                        cost_sum = 0.
-                        error_sum = 0.
-                        error_res = 0.
-                        n_cost = 0
-                        valid_recall = {}
-                        for i in xrange(3):
-                            valid_recall[i] = 0
+                    h_pre = h_state[str(parent)]
+                    g = compute_gparams_fn(input_x, input_y, h_pre)
+                    opt.gparams_update(g)
+                    [train_loss, h]= compute_loss_fn(input_x, input_y, h_pre)
+                    h_state[str(docid_x)] = h
+                    #logging.info("the train loss of train idx %d is: %f" %(seq_idx, train_loss))
+                # END one thread training
+                seq_idx += 1
+                if seq_idx % batch_size == 0:
+                    # UPDATE PARAMS
+                    #logging.info("[update the params at epoch %d, seq %d]"%(epoch, seq_idx))
 
-                        logging.info("[===== began to idx %d validation =====]"%(valid_idx))
-                        # VALID PROCESS
-                        for (valid_kx, valid_vx), (valid_ky, valid_vy) in zip(valid_x.items(), valid_y.items()):
-                            # EACH THREAD
-                            # TODO: CHECK VALID
-                            # check threadid
-                            assert(valid_kx == valid_ky)
-                            threadid = valid_kx
-                            n_sens = len(valid_vx)
-                            n_cost += n_sens
-                            h_state = {}
-                            h_state['-1'] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
-                            for item_x, item_y in zip(valid_vx, valid_vy):
-                                # get each valid sentence
-                                (docid_x, parent, words_emb) = item_x
-                                (docid_y, label) = item_y
-                                assert(docid_x == docid_y)
-                                if h_state.get(docid_x) == None:
-                                    h_state[docid_x] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
+                    opt.params_update(model.params)
+                    # TODO: DEBUG
+                    #print model.params[6][-1].eval()
+                if seq_idx % valid_frequency == 0:
+                    valid_idx += 1
 
-                                input_x = words_emb
-                                input_y = np.asarray([1 if i == label else 0 for i in xrange(3)], dtype=np.int32)
-                                h_tm1 = h_state[parent]
-                                valid_loss = compute_loss_fn(input_x, input_y, h_tm1)
-                                [error, label_pred] = compute_error_fn(input_x, label, h_tm1)
-                                label_pred = int(label_pred)
-                                valid_recall[label_pred] += 1
-                                error_sum += error
-                                cost_sum += valid_loss
-                        cost_res = cost_sum / n_cost
-                        error_res = error_sum / n_cost
-                        logging.info("[IMPORTANT: the loss of valid-idx %d is: %f ======]" %(valid_idx, cost_res))
-                        logging.info("[IMPORTANT: the error of valid-idx %d is: %f ======]" %(valid_idx, error_res))
-                        logging.info("[IMPORTANT: the negative num of predict: %d]"%(valid_recall[0]))
-                        logging.info("[IMPORTANT: the neutral num of predict: %d]"%(valid_recall[1]))
-                        logging.info("[IMPORTANT: the positive num of predict: %d]"%(valid_recall[2]))
-
-
-        
-
-        """             
+                    # statistic value
+                    cost_res = 0.
+                    cost_sum = 0.
+                    error_sum = 0.
+                    error_res = 0.
+                    n_cost = 0
+                    valid_recall = {}
+                    for i in xrange(3):
+                        valid_recall[i] = 0
+                    logging.info("[===== began to idx %d validation =====]"%(valid_idx))
+                    # VALID PROCESS
+                    for (valid_kx, valid_vx), (valid_ky, valid_vy) in zip(valid_x.items(), valid_y.items()):
+                        # EACH THREAD
+                        # TODO: CHECK VALID
+                        # check threadid
+                        assert(valid_kx == valid_ky)
+                        threadid = valid_kx
+                        n_sens = len(valid_vx)
+                        n_cost += n_sens
+                        h_state = {}
+                        h_state['-1'] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
+                        for item_x, item_y in zip(valid_vx, valid_vy):
+                            # get each valid sentence
+                            (docid_x, parent, words_emb) = item_x
+                            (docid_y, label) = item_y
+                            assert(docid_x == docid_y)
+                            # valid data prepare
+                            input_x = words_emb
+                            input_y = np.asarray([1 if i == label else 0 for i in xrange(3)], dtype=np.int32)
+                            h_pre = h_state[str(parent)]
+                            [valid_loss, h] = compute_loss_fn(input_x, input_y, h_pre)
+                            h_state[str(docid_x)] = h
+                            [error, label_pred] = compute_error_fn(input_x, label, h_pre)
+                            label_pred = int(label_pred)
+                            valid_recall[label_pred] += 1
+                            error_sum += error
+                            cost_sum += valid_loss
+                    cost_res = cost_sum / n_cost
+                    error_res = error_sum / n_cost
+                    logging.info("[IMPORTANT: the loss of valid-idx %d is: %f ======]" %(valid_idx, cost_res))
+                    logging.info("[IMPORTANT: the error of valid-idx %d is: %f ======]" %(valid_idx, error_res))
+                    logging.info("[IMPORTANT: the negative num of predict: %d]"%(valid_recall[0]))
+                    logging.info("[IMPORTANT: the neutral num of predict: %d]"%(valid_recall[1]))
+                    logging.info("[IMPORTANT: the positive num of predict: %d]"%(valid_recall[2]))
+            opt.learning_rate_decay()
+        """
 
         -------------------------------- END rcnn_onestep_model -----------------------
         """

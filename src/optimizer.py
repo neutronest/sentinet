@@ -4,87 +4,83 @@ import numpy as np
 import theano
 import theano.tensor as T
 from utils import shared_zeros, shared_scalar
+import pdb
 
 
-class SGD(object):
+class OPTIMIZER(object):
+    """
+    the basic class of optimizer
+    """
+    def __init__(self):
+        self.gparams_acc = None
+        self.n_acc = 0
+    def gparams_update(self, gradients):
+        """
+        accumulate the iter gradients
+        """
+
+        #self.gparams_acc = gradients if self.gparams_acc == None else self.gparams_acc + gradients
+        if self.gparams_acc == None:
+            self.gparams_acc = gradients
+        else:
+            for i in xrange(len(gradients)):
+                self.gparams_acc[i] += gradients[i]
+        # TODO: DEBUG
+        #print self.gparams_acc[6]
+        self.n_acc += 1
+        return
+
+
+class SGD(OPTIMIZER):
     """
     """
 
     def __init__(self,
                  learning_rate=0.01,
-                 momentum=0.,
-                 decay=0.99):
+                 momentum=0.9,
+                 decay=0.01):
         """
         """
-
-        self.updates = []
-        self.gparams_acc = None
-        self.lr_var = shared_scalar(learning_rate)
+        OPTIMIZER.__init__(self)
+        self.updates ={}
+        self.n_acc = 0
+        self.delta_pre = {}
+        self.learning_rate = learning_rate
+        self.decay = decay
+        self.lr_var = shared_scalar(self.learning_rate)
         self.momentum_var = shared_scalar(momentum)
 
-
-    def gparams_update(self, gparams):
-
-        if self.gparams_acc == None:
-            self.gparams_acc = gparams
-        else:
-            self.gparams_acc = [gparam_acc + gparam for (gparam_acc, gparam) in zip(self.gparams_acc, gparams)]
-        return self.gparams_acc
-
-    def param_update(self, param_var, gparam_var):
-        ugd = - gparam_var * self.lr_var
-        param_var += ugd
-        return param_var
-
-
-    def get_gradients(self, loss_var, params_var_list):
+    def delta_pre_init(self, params):
         """
-        calculate the gradient of current data first
-        do not update the param immediately
-
-        Parameters:
-        -----------
-        loss_var: the loss variable about this time cost
-          type: theano variable
-
-        params_var_list: the list of parameters variable
-          type: list of theano variable
         """
-        gparams = [T.grad(loss_var, param_var) for param_var in params_var_list]
-        return gparams
-
-    def add_gradients(self, gparams):
-        """
-        gradients accumulate
-
-        Parameters:
-        -----------
-        gparams: the gradients that need to be add
-          type: list of theano variable
-
-        """
-        self.gparams_acc = [g_acc + g for g_acc, g in zip(gparams_acc, gparams)]
+        for param in params:
+            self.delta_pre[param] = theano.shared(np.zeros(param.get_value(borrow=True).shape,
+                                                           dtype=theano.config.floatX))
         return
+    def params_update(self, params):
+        """
+        """
+        for param, gparam in zip(params, self.gparams_acc):
+            weight_update = self.delta_pre[param]
+            ugd = self.momentum_var * weight_update - gparam * self.lr_var / self.n_acc
+            self.updates[weight_update] = ugd
+            self.updates[param] = param + ugd
 
-    def update_params(self, params_var_list):
+        f = theano.function(inputs=[],
+                            outputs=None,
+                            updates=self.updates)
+        f()
         """
+        for i in xrange(len(params)):
+            ugd = self.momentum_var * self.delta_pre[i] - self.gparams_acc[i] / self.n_acc * self.lr_var
+            self.delta_pre[i] = ugd
+            self.updates[i] = params[i] + ugd
         """
-        for params_var, gparam in zip(params_var_list, self.gparams_acc):
-            ugd = - gparam * self.lr_var
-            params_var += ugd
+        # re-init
+        self.gparams_acc = None
+        #print params[6][-1].eval()
+        self.n_acc = 0
         return
-
-    def update_params_momentum(self,
-                               params_var_list,
-                               momentum,
-                               pre_ugd_list):
-        for params_var, gparam, pre_ugd in zip(params_var_list, self.gparams_acc, pre_ugd_list):
-            ugd = - gparam * self.lr_var
-            params_var += momentum * pre_ugd + ugd
-        return
-
-    def clear_gradients(self):
-        """
-        """
-        self.gparams_acc = []
-        return
+    def learning_rate_decay(self):
+        self.learning_rate *= (1-self.decay)
+        self.lr_var = shared_scalar(self.learning_rate)

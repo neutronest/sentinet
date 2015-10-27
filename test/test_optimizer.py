@@ -34,8 +34,9 @@ def test_sgd():
     cost_var = rcnn_onestep_model.loss(y_var, rcnn_onestep_model.y_pred)
 
     sgd = optimizer.SGD() # use default params
-
+    sgd.delta_pre_init(rcnn_onestep_model.params)
     print "gparam define"
+    """
     gparams_var = [T.grad(cost_var, param) for param in rcnn_onestep_model.params]
     print "param update function and train function define"
     #pdb.set_trace()
@@ -46,8 +47,31 @@ def test_sgd():
     model_train_fn = theano.function(inputs=[],
                                      outputs=None,
                                      updates=optimize_updates)
+    """
+    gparams_var = T.grad(cost_var, rcnn_onestep_model.params)
+    compute_gradient_fn = theano.function(inputs=[input_var, y_var, h_tm1],
+                                          outputs=gparams_var)
 
+    # prepare dataset
+    sen_len = 10
+    word_dim = 300
+    # prepare data
+    sen = []
+    for i in xrange(sen_len):
+        word_emb = utils.ndarray_uniform((word_dim,), dtype=theano.config.floatX)
+        sen.append(word_emb)
 
+    for i in xrange(5):
+        for j in xrange(10):
+            sen_x = np.asarray(sen, dtype=theano.config.floatX)
+            h_0 = utils.ndarray_uniform((300,), 0.05)
+            y_true = np.asarray([0, 1, 0], dtype=np.int32)
+            g = compute_gradient_fn(sen_x, y_true, h_0)
+            print "update gparams"
+            sgd.gparams_update(g)
+        print "update param"
+        sgd.params_update(rcnn_onestep_model.params)
+        print rcnn_onestep_model.params[6][-1].eval()
     print "[Test SGD Optimizer OK!]"
     return
 

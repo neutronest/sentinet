@@ -51,7 +51,7 @@ class CNN(object):
                                                   ws,
                                                   self.dim)),
                                 dtype=theano.config.floatX)
-            W = theano.shared(value=W_init)
+            W = theano.shared(value=W_init, name="cnn_"+str(ws))
             self.W_list.append(W)
             self.params.append(W)
         b_init = np.asarray(np.zeros((self.n_feature_maps * len(self.window_sizes),), dtype=theano.config.floatX))
@@ -99,7 +99,8 @@ class CNN_OneStep(object):
         self.cnn_weights = []
         for ws in window_sizes:
             cnn_weight = utils.shared_uniform((n_feature_maps, 1, ws, self.dim),
-                                              dtype=theano.config.floatX)
+                                              dtype=theano.config.floatX, name="cnn"+str(ws))
+
             self.params.append(cnn_weight)
             self.cnn_weights.append(cnn_weight)
 
