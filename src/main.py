@@ -78,6 +78,10 @@ def run_microblog_experiment(load_data,
         seq_idx = 0
         valid_idx = 0
         epoch = 0
+
+        train_sen_num = 0
+        train_loss_res = 0.
+        train_loss_sum = 0.
         while epoch < n_epochs:
             logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
             seq_idx = 0
@@ -87,7 +91,7 @@ def run_microblog_experiment(load_data,
                 #logging.info("---next thread---")
                 assert(train_kx == train_ky)
                 threadid = train_kx
-                n_sens = len(train_vx)
+                train_sen_num += len(train_vx)
                 # we must store the each node's hidden vector
                 h_state = {}
                 h_state['-1'] = utils.ndarray_uniform((model.rnn_hidden), 0.01, theano.config.floatX)
@@ -105,17 +109,23 @@ def run_microblog_experiment(load_data,
                     input_x = words_emb
                     input_y = np.asarray([1 if i == label else 0  for i in xrange(3)], dtype=np.int32)
                     h_pre = h_state[str(parent)]
+                    # update gradients
                     g = compute_gparams_fn(input_x, input_y, h_pre)
                     opt.gparams_update(g)
                     [train_loss, h]= compute_loss_fn(input_x, input_y, h_pre)
                     h_state[str(docid_x)] = h
+
+                    train_loss_sum += train_loss
                     #logging.info("the train loss of train idx %d is: %f" %(seq_idx, train_loss))
                 # END one thread training
                 seq_idx += 1
                 if seq_idx % batch_size == 0:
                     # UPDATE PARAMS
                     #logging.info("[update the params at epoch %d, seq %d]"%(epoch, seq_idx))
-
+                    train_loss_res = train_loss_sum / train_sen_num
+                    logging.info("[the train loss of %d is: %f]"%(seq_idx, train_loss_res))
+                    train_loss_sum = 0
+                    train_sen_sum = 0
                     opt.params_update(model.params)
                     # TODO: DEBUG
                     #print model.params[6][-1].eval()
