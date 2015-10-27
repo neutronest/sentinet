@@ -166,7 +166,7 @@ class RNN_OneStep(object):
         self.h, self.y_t = self._recurrent(self.input_var, self.h_tm1)
         self.y_pred = T.nnet.softmax(self.y_t)
         self.output_var = T.argmax(self.y_pred, axis=1)
-        self.loss = loss.binary_crossentropy
+        self.loss = loss.nll_multiclass
         self.error = loss.mean_classify_error
         return
 

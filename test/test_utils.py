@@ -26,7 +26,6 @@ def test_nll_multiclass():
 
     cost_fn = theano.function(inputs=[y_true_var, y_pred_var],
                               outputs=[cost_var])
-
     cost = cost_fn(y_true, y_pred)
     print cost
 
@@ -98,6 +97,6 @@ def test_mask():
 
 
 if __name__ == "__main__":
-    test_binary_loss()
-    test_mask()
-    #test_nll_multiclass()
+    #test_binary_loss()
+    #test_mask()
+    test_nll_multiclass()

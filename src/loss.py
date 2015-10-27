@@ -33,9 +33,10 @@ def binary_crossentropy(y_true, y_pred):
 def nll_multiclass(y_true, y_pred):
     """
     """
-    
 
-    return -T.mean(T.log(y_pred)[T.arange(y_true.shape[0]), y_true])
+    y_pred /= y_pred.sum(axis=-1,keepdims=True)
+    #return -T.mean(T.log(y_pred)[T.arange(y_true.shape[0]), y_true])
+    return T.mean(T.nnet.categorical_crossentropy(y_pred, y_true))
 
 def mean_classify_error(label_true, label_pred):
     """
