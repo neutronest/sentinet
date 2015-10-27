@@ -24,6 +24,7 @@ def run_microblog_experiment(load_data,
                              batch_size,
                              n_epochs,
                              valid_frequency,
+                             learning_rate,
                              optimizer_method="sgd"):
     """ the microblog experiment
 
@@ -57,7 +58,7 @@ def run_microblog_experiment(load_data,
         # optimizer define
         logging.info("[minibatch used]")
         logging.info("[optimizer define!]")
-        opt = optimizer.SGD(learning_rate=0.05)
+        opt = optimizer.SGD(learning_rate=learning_rate)
         opt.delta_pre_init(model.params)
 
         gparams_var_list = T.grad(cost_var, model.params)
@@ -538,6 +539,7 @@ if __name__ == "__main__":
                                  batch_size,
                                  n_epochs,
                                  valid_frequency,
+                                 learning_rate,
                                  "sgd")
     # different dataset has different variable types
     # dtensor3, imatrix
