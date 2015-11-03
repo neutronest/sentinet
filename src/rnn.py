@@ -7,93 +7,153 @@ import theano.tensor as T
 import loss
 import utils
 
-class RNN(object):
-    """
-    the basic recurrent neural network
-    """
 
+
+
+class SRNN(object):
+    """ sequence RNN
+
+
+    """
     def __init__(self,
-                 rng,
-                 input_data,
+                 input_var,
+                 sens_pos,
                  n_input,
                  n_hidden,
-                 n_output,
-                 activation=T.nnet.sigmoid,
-                 output_type="softmax",
-                 if_dropout=True):
-        """
-        the rnn init function
-        Parameters:
-        -----------
+                 n_output):
 
-
-        """
-
-        self.input_data = input_data
+        self.input_var = input_var
+        self.sens_pos = sens_pos
         self.n_input = n_input
         self.n_hidden = n_hidden
         self.n_output = n_output
 
-        # recurrent weights as a shared variable
-        W_h = np.asarray(np.random.uniform(size=(n_hidden, n_hidden),
-                                              low=-.01, high=.01),
-                                              dtype=theano.config.floatX)
-        self.W_h = theano.shared(value=W_h, name='W_h')
-        # input to hidden layer weights
-        W_in_init = np.asarray(np.random.uniform(size=(n_input, n_hidden),
-                                                 low=-.01, high=.01),
-                                                 dtype=theano.config.floatX)
-        self.W_in = theano.shared(value=W_in_init, name='W_in')
+                # weight define
+        self.W_input = utils.shared_uniform((n_input, n_hidden),
+                                     dtype=theano.config.floatX,
+                                     name='W_in')
+        self.W_hidden = utils.shared_uniform((n_hidden, n_hidden),
+                                      dtype=theano.config.floatX,
+                                      name='W_hidden')
+        self.W_output = utils.shared_uniform((n_hidden, n_output),
+                                      dtype=theano.config.floatX,
+                                      name='W_output')
 
-        # hidden to output layer weights
-        W_out_init = np.asarray(np.random.uniform(size=(n_hidden, n_output),
-                                                  low=-.01, high=.01),
-                                                  dtype=theano.config.floatX)
-        self.W_out = theano.shared(value=W_out_init, name='W_out')
+        self.b_h = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='bh')
+        self.b_y = utils.shared_zeros((n_output,),
+                                      dtype=theano.config.floatX,
+                                      name='by')
 
-        h0_init = np.zeros((n_hidden,), dtype=theano.config.floatX)
-        self.h0 = theano.shared(value=h0_init, name='h0')
+        self.h0 = utils.shared_zeros((n_hidden,),
+                                     dtype=theano.config.floatX)
 
-        bh_init = np.zeros((n_hidden,), dtype=theano.config.floatX)
-        self.bh = theano.shared(value=bh_init, name='bh')
+        self.params = [self.W_input,
+                       self.W_hidden,
+                       self.W_output,
+                       self.b_h,
+                       self.b_y,
+                       self.h0]
+        return
 
-        by_init = np.zeros((n_output,), dtype=theano.config.floatX)
-        self.by = theano.shared(value=by_init, name='by')
+    def _recurrent(self, x_t, h_pre):
+        """
+        """
+        h_t = T.nnet.sigmoid(T.dot(x_t, self.W_input) + \
+                             T.dot(h_pre, self.W_hidden) + \
+                             self.b_h)
+        return h_t
 
-        self.params = [self.W_h, self.W_in, self.W_out, self.h0,
-                       self.bh, self.by]
+    def _get_hidden_state(self, sen_pos):
+        words_var = self.input_var.take(T.arange(sen_pos[0], sen_pos[1]))
 
-        # for every parameter, we maintain it's last update
-        # the idea here is to use "momentum"
-        # keep moving mostly in the same direction
-        def step(x_t, h_previous):
-            """
+        h, inner_updates = theano.scan(fn=self._recurrent,
+                                       sequences=words_var,
+                                       n_steps=words_var.shape[0],
+                                       outputs_info=self.h0)
+        # return the last hidden as the sentence representation
+        return h[-1]
 
-            """
+    def build_network(self):
+        self.h, outer_updates = theano.scan(fn=self._get_hidden_state,
+                                            sequences=self.sens_pos,
+                                            outputs_info=None)
 
-            h_t = T.nnet.sigmoid(T.dot(x_t, self.W_in) + T.dot(h_previous, self.W_h) + self.bh)
-            y_t = T.dot(h_t, self.W_out) + self.by
-
-            # dropout layer
-            """
-            if if_dropout:
-                srng = T.shared_randomstreams.RandomStreams(rng.randint(999999))
-                mask = srng.binomial(n=1,
-                                     p=0.5,
-                                     size=y_t.shape)
-                y_t = y_t * T.cast(mask, theano.config.floatX)
-            """
-            return h_t, y_t
-
-        [self.h_var, self.y_pred_var], _ = theano.scan(step,
-                                                       sequences=self.input_data,
-                                                       outputs_info=[self.h0, None])
-
-        self.p_y_given_x_var = T.nnet.softmax(self.y_pred_var)
-        self.output_var = T.argmax(self.p_y_given_x_var, axis=1)
-        self.loss = loss.binary_crossentropy
+        self.hidden_states = self.h
+        self.y_pred_var = T.nnet.softmax(self.y)
+        self.output = T.argmax(self.y_pred_var, axis=1)
+        self.loss = loss.nll_multiclass
         self.error = loss.mean_classify_error
-        ## ==== end function ===
+        return
+
+
+class TRNN(object):
+    """
+    """
+    def __init__(self,
+                 input_var_list,
+                 relation_pairs,
+                 n_input,
+                 n_hidden,
+                 n_output):
+        """
+        """
+        #RNN.__init__(self, input_var, n_input, n_hidden, n_output)
+        self.input_var_list = input_var_list
+        self.relation_pairs = relation_pairs
+        self.n_input = n_input
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+
+        self.TW_input = utils.shared_uniform((n_input, n_output),
+                                             dtype=theano.config.floatX,
+                                             name='TW_input')
+        self.TW_hidden = utils.shared_uniform((n_hidden, n_hidden),
+                                              dtype=theano.config.floatX,
+                                              name='TW_hidden')
+        self.TW_output = utils.shared_uniform((n_hidden, n_output),
+                                              dtype=theano.config.floatX,
+                                              name='TW_output')
+
+        self.tb_h = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='tbh')
+        self.tb_y = utils.shared_zeros((n_output,),
+                                      dtype=theano.config.floatX,
+                                      name='tby')
+
+        self.th0 = utils.shared_zeros((n_hidden,),
+                                     dtype=theano.config.floatX)
+
+        self.params = [self.TW_input,
+                       self.TW_hidden,
+                       self.TW_output,
+                       self.tb_h,
+                       self.tb_y,
+                       self.th0]
+        return
+
+    def _recurrent(self, relation_pair):
+        x_t = self.input_var_list[relation_pair[0]]
+        h_pre = self.h_state_list[relation_pair[1]+1]
+
+        self.h_state_list[relation_pair[0]+1] = T.nnet.sigmoid(T.dot(x_t, self.TW_input),
+                                                               T.dot(h_pre, self.TW_hidden),
+                                                               self.tb_h)
+        y_t = T.dot(self.h_state_list[relation_pair[0]+1], self.TW_output) + self.tb_y
+        return y_t
+
+    def build_network(self):
+        self.h_state_list = [utils.shared_zeros((self.n_hidden,), dtype=theano.config.floatX)] * (len(self.input_var_list)+1)
+
+        y, _ = theano.scan(fn=self._recurrent,
+                                       sequences=self.relation_pairs,
+                                       outputs_info=None)
+        self.y_pred = T.nnet.softmax(y)
+        self.output = T.argmax(self.y_pred, axis=1)
+        self.loss = loss.nll_multiclass
+        self.error = loss.mean_classify_error
         return
 
 
@@ -101,6 +161,97 @@ class RNN_OneStep(object):
     """ the simple RNN without "scan".
     """
 
+    def __init__(self,
+                 input_var,
+                 y_pre_var,
+                 n_input,
+                 n_hidden,
+                 n_output,
+                 h_tm1):
+        """
+        the init
+
+        Parameters:
+        -----------
+        input_var: the input theano variable
+            type: theano tensor of dvector
+
+        y_pre_var: the previous y vector
+            type: theano tensor of dvector
+
+
+        n_input: the size of input layer
+            type: int
+
+        n_hidden: the size of hidden layer
+            type: int
+
+        n_output: the sizs of output layer
+            type: int
+
+        h_tm1: the previous hidden theano tensor variable
+            type: theano variable of dvector
+        """
+
+        self.input_var = input_var
+        self.y_pre_var = y_pre_var
+        self.n_input = n_input
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+        self.h_tm1 = h_tm1
+        # weight define
+        self.W_input = utils.shared_uniform((n_input, n_hidden),
+                                     dtype=theano.config.floatX,
+                                     name='W_in')
+        self.W_hidden = utils.shared_uniform((n_hidden, n_hidden),
+                                      dtype=theano.config.floatX,
+                                      name='W_hidden')
+        self.W_output = utils.shared_uniform((n_hidden, n_output),
+                                      dtype=theano.config.floatX,
+                                      name='W_output')
+        self.W_hy = utils.shared_uniform((n_output, n_hidden),
+                                         dtype=theano.config.floatX,
+                                         name='W_hy')
+
+        self.b_h = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='bh')
+        self.b_y = utils.shared_zeros((n_output,),
+                                      dtype=theano.config.floatX,
+                                      name='by')
+
+        self.params = [self.W_input,
+                       self.W_hidden,
+                       self.W_output,
+                       self.W_hy,
+                       self.b_h,
+                       self.b_y]
+
+        return
+
+    def _recurrent(self, x_t, h_pre):
+        h_t = T.nnet.sigmoid(T.dot(x_t, self.W_input) \
+                             + T.dot(h_pre, self.W_hidden) \
+                             + T.dot(self.y_pre_var, self.W_hy) \
+                             + self.b_h)
+        y_t = T.dot(h_t, self.W_output) + self.b_y
+        return h_t, y_t
+
+    def build_network(self):
+
+        self.h, self.y_t = self._recurrent(self.input_var, self.h_tm1)
+        self.y_pred = T.nnet.softmax(self.y_t)
+        self.output_var = T.argmax(self.y_pred, axis=1)
+        self.loss = loss.nll_multiclass
+        self.error = loss.mean_classify_error
+        return
+
+    # end RNN_OneStep ===================================
+
+
+class GRU_OneStep(object):
+    """
+    """
     def __init__(self,
                  input_var,
                  n_input,
@@ -127,156 +278,10 @@ class RNN_OneStep(object):
         h_tm1: the previous hidden theano tensor variable
             type: theano variable of dvector
         """
-
         self.input_var = input_var
         self.n_input = n_input
-        self.n_hidden = n_hidden
+        self.n_hideen = n_hidden
         self.n_output = n_output
         self.h_tm1 = h_tm1
-        # weight define
-        self.W_input = utils.shared_uniform((n_input, n_hidden),
-                                     dtype=theano.config.floatX,
-                                     name='W_in')
-        self.W_hidden = utils.shared_uniform((n_hidden, n_hidden),
-                                      dtype=theano.config.floatX,
-                                      name='W_hidden')
-        self.W_output = utils.shared_uniform((n_hidden, n_output),
-                                      dtype=theano.config.floatX,
-                                      name='W_output')
-
-        self.b_h = utils.shared_zeros((n_hidden,),
-                                      dtype=theano.config.floatX,
-                                      name='bh')
-        self.b_y = utils.shared_zeros((n_output,),
-                                      dtype=theano.config.floatX,
-                                      name='by')
-
-        self.params = [self.W_input, self.W_hidden, self.W_output,
-                       self.b_h, self.b_y]
 
         return
-
-    def _recurrent(self, x_t, h_pre):
-        h_t = T.nnet.sigmoid(T.dot(x_t, self.W_input) + T.dot(h_pre, self.W_hidden) + self.b_h)
-        y_t = T.dot(h_t, self.W_output) + self.b_y
-        return h_t, y_t
-
-    def build_network(self):
-
-        self.h, self.y_t = self._recurrent(self.input_var, self.h_tm1)
-        self.y_pred = T.nnet.softmax(self.y_t)
-        self.output_var = T.argmax(self.y_pred, axis=1)
-        self.loss = loss.nll_multiclass
-        self.error = loss.mean_classify_error
-        return
-
-    # end RNN_OneStep ===================================
-
-
-
-
-
-
-class RNN_LSTM(object):
-    """
-    the recurrent neural network with LSTM
-    """
-    def W_init(self, n_row, n_col, w_name):
-        """
-        """
-        W = np.asarray(np.random.uniform(size=(n_row, n_col),
-                                         low=-.01,
-                                         high=.01),
-                       dtype=theano.config.floatX)
-        return theano.shared(value=W, name=w_name)
-
-    """
-    copying from keras
-    not use keras right now.
-    """
-    def get_fans(self, shape):
-        fan_in = shape[0] if len(shape) == 2 else np.prod(shape[1:])
-        fan_out = shape[1] if len(shape) == 2 else shape[0]
-        return fan_in, fan_out
-
-    def glorot_uniform(self, shape):
-        fan_in, fan_out = self.get_fans(shape)
-        s = np.sqrt(6. / (fan_in + fan_out))
-        return uniform(shape, s)
-
-    def orthogonal(self, shape, scale=1.1):
-        ''' From Lasagne. Reference: Saxe et al., http://arxiv.org/abs/1312.6120
-        '''
-        flat_shape = (shape[0], np.prod(shape[1:]))
-        a = np.random.normal(0.0, 1.0, flat_shape)
-        u, _, v = np.linalg.svd(a, full_matrices=False)
-        # pick the one with the correct shape
-        q = u if u.shape == flat_shape else v
-        q = q.reshapeo(shape)
-        return sharedX(scale * q[:shape[0], :shape[1]])
-
-    def __init__(self,
-                 rng,
-                 input_data,
-                 n_input,
-                 n_hidden,
-                 n_output,
-                 activation="sigmoid",
-                 output_type="softmax",
-                 if_dropout=True):
-
-
-        # weights of LSTM
-        self.W_i = self.glorot_uniform((n_input, n_hidden))
-        self.U_i = self.orthogonal((n_hidden, n_hidden))
-        self.b_i = shared_zeros((n_hidden,))
-
-        self.W_f = self.glorot_uniform((n_input, n_hidden))
-        self.U_f = self.glorot_uniform((n_hidden, n_hidden))
-        self.b_f = shared_ones((n_hidden,))
-
-        self.W_c = self.glorot_uniform((n_input, n_hidden))
-        self.U_c = self.orthogonal((n_hidden, n_hidden))
-        self.b_c = shared_zeros((n_hidden,))
-
-        self.W_o = self.glorot_uniform((n_input, n_hidden))
-        self.U_o = self.orthogonal((n_hidden, n_hidden))
-        self.b_o = shared_zeros((n_hidden,))
-
-        self.params = [
-            self.W_i, self.U_i, self.b_i,
-            self.W_f, self.U_f, self.b_f,
-            self.W_c, self.U_c, self.b_c,
-            self.W_o, self.U_o, self.b_o
-        ]
-
-        # LSTM Cell step
-        def _step(self, \
-                  xi_t, xf_t, xo_t, xc_t, \
-                  mask_tm1, h_tm1, c_tm1,\
-                  u_i, u_f, u_o, u_c):
-            h_mask_tm1 = mask_tm1 * h_tm1
-            c_mask_tm1 = mask_tm1 * c_tm1
-
-            i_t = T.nnet.hard_sigmoid(xi_t + T.dot(h_mask_tm1, u_i))
-            f_t = T.nnet.hard_sigmoid(xf_t + T.dot(h_mask_tm1, u_f))
-            c_t = f_t * c_tm1 + i_t * T.tanh(xc_t + T.dot(h_mask_tm1, u_c))
-            o_t = T.nnet.hard_sigmoid(xo_t + T.dot(h_mask_tm1, u_o))
-            h_t = o_t * T.tanh(c_t)
-            return h_t, c_t
-
-        return
-
-    def adadelta_optimizer(self, params, loss):
-
-        def _clip_norm(g, c, norm):
-            if c > 0:
-                g = T.swtich(T.ge(n, c), g * c / n, g)
-            return g
-
-
-        def _get_gradients(params, loss):
-            """
-            """
-            grads = T.grad(loss, params)
-            norm = T.sqrt(sum([g ** 2 for g in grads]))

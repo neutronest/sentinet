@@ -82,6 +82,8 @@ def run_microblog_experiment(load_data,
         train_sen_num = 0
         train_loss_res = 0.
         train_loss_sum = 0.
+        train_error = 0.
+        train_recall = [0, 0, 0]
         while epoch < n_epochs:
             logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
             seq_idx = 0
@@ -112,10 +114,15 @@ def run_microblog_experiment(load_data,
                     # update gradients
                     g = compute_gparams_fn(input_x, input_y, h_pre)
                     opt.gparams_update(g)
+                    # compute train loss
                     [train_loss, h]= compute_loss_fn(input_x, input_y, h_pre)
                     h_state[str(docid_x)] = h
-
                     train_loss_sum += train_loss
+                    # compute train error
+                    [error, label_pred] = compute_error_fn(input_x, label, h_pre)
+                    label_pred = int(label_pred)
+                    train_error += error
+                    train_recall[label_pred] += 1
                     #logging.info("the train loss of train idx %d is: %f" %(seq_idx, train_loss))
                 # END one thread training
                 seq_idx += 1
@@ -123,7 +130,13 @@ def run_microblog_experiment(load_data,
                     # UPDATE PARAMS
                     #logging.info("[update the params at epoch %d, seq %d]"%(epoch, seq_idx))
                     train_loss_res = train_loss_sum / train_sen_num
+                    train_error = train_error * 1. / train_sen_num
                     logging.info("[the train loss of %d is: %f]"%(seq_idx, train_loss_res))
+                    logging.info("[the train error is: %f]"%(train_error))
+                    logging.info("the predict num is %d, %d, %d"%(train_recall[0], train_recall[1], train_recall[2]))
+                    # re-init
+                    train_error = 0
+                    train_recall = [0, 0, 0]
                     train_loss_sum = 0
                     train_sen_sum = 0
                     opt.params_update(model.params)

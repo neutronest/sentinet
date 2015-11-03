@@ -183,6 +183,80 @@ def generate_words_emb(words, mvectorize):
 
 
 
+def generate_threadsV2(file_path,
+                       mvectorize,
+                       n_hidden,
+                       data_x,
+                       data_y):
+    """ get the well-sturctured data of train/valid/test Version 2...
+
+    Parameters:
+    -----------
+    file_path: the specific file path
+        type: str
+
+    mvectorize: the mvectorize object
+        type: mvectorize
+
+    n_hidden: the num of hidden state in the proposed model
+
+    data_x: the X of train/valid/test
+        type: {threadid:[word_embs_flatten,
+                         {docid:(sen_start_pos, sen_end_pos),..},
+                         {h_state_docid:h_state_vector},
+                         [(docid, parentid),...]}
+              threadid: str
+              word_embs_flatten: concatenate all word embs of each sentence.
+                                 the length is equal to the len(word_emb) * sum(len(each sen))
+              type: ndarray of list
+
+              sen_start_pos: int, the start position of each sen in word_embs_flatten
+              sen_end_pos: int, the end position of each sen in word_embs_flatten
+              type: (int, int) of list
+
+              docid: the current id of sen
+              parentid: the corresponding parent id
+              type: (int, int) of list
+
+    data_y: the Y of train/valid/test
+          type: {threadid: [(docid, label)]}
+
+    """
+    with open(file_path, "r") as train_ob:
+        for line in train_ob:
+            line = line.strip()
+            line_json = json.loads(line)
+            # parse the conponent
+            threadid = str(line_json['threadid'])
+            docid = str(line_json['docid'])
+            parent = str(line_json['parent'])
+            words = line_json['words']
+            words_emb = generate_words_emb(words, mvectorize)
+            # IMPORTANT! change -1, 0, 1 to 0, 1, 2
+            label = int(line_json['label'])+1
+
+            if data_x.get(threadid) == None:
+                word_emb_flatten = [words_emb]
+                sens_pos = [0, words_emb.shape[0]-1]
+                h_state = {}
+                h_state[0] = np.asarray(np.zeros((n_hidden,), dtype=theano.config.floatX))
+                relation_seq = [(docid, parent)]
+                data_x[threadid] = (word_emb_flatten, [sens_pos], h_state, relation_seq)
+            else:
+                data_x[threadid][0].append(words_emb)
+                last_end_pos = data_x[threadid][1][-1][1]
+                data_x[threadid][1].append([last_end_pos+1, last_end_pos+words_emb.shape[0]]+1)
+                #data_x[threadid][1][docid] = (last_end_pos+1, last_end_pos+words_emb.shape[0])
+                data_x[threadid][2][docid] = np.asarray(np.zeros((n_hidden,),
+                                                                 dtype=theano.config.floatX))
+                data_x[threadid][3].append((docid, parent))
+
+            if data_y.get(threadid) == None:
+                data_y[threadid] = [(docid, label)]
+            else:
+                data_y[threadid].append((docid, label))
+    return (data_x, data_y)
+
 def generate_threads(file_path, mvectorize, data_x, data_y):
     """ get the well-structured data of train/valid/test
 
@@ -215,8 +289,8 @@ def generate_threads(file_path, mvectorize, data_x, data_y):
             parent = str(line_json['parent'])
             words = line_json['words']
             words_emb = generate_words_emb(words, mvectorize)
-
-            label = int(line_json['label'])
+            # IMPORTANT! change -1, 0, 1 to 0, 1, 2
+            label = int(line_json['label'])+1
             cur_item_x = (docid, parent, words_emb)
             cur_item_y = (docid, label)
             if data_x.get(threadid) == None:
@@ -225,11 +299,9 @@ def generate_threads(file_path, mvectorize, data_x, data_y):
                 data_x[threadid].append(cur_item_x)
 
             if data_y.get(threadid) == None:
-                data_y[threadid] = [cur_item_y]
+                data_y[threadid] = [(docid, label)]
             else:
-                data_y[threadid].append(cur_item_y)
-
-
+                data_y[threadid].append((docid, label))
     return (data_x, data_y)
 
 def load_microblogdata(train_indicators,
@@ -272,8 +344,9 @@ def load_microblogdata(train_indicators,
     for i in train_indicators:
         for topic_id in xrange(n_topics):
             file_path = dir_path + "fold_" + str(i) + "/" + str(topic_id) + ".txt"
-            (train_x, train_y) = generate_threads(file_path,
+            (train_x, train_y) = generate_threadsV2(file_path,
                                                   mv,
+                                                  300,
                                                   train_x,
                                                   train_y)
 
@@ -281,19 +354,21 @@ def load_microblogdata(train_indicators,
     # generate valid dataset
     for topic_id in xrange(n_topics):
         file_path = dir_path + "fold_" + str(valid_indicator) + "/" + str(topic_id) + ".txt"
-        (valid_x, valid_y) = generate_threads(file_path,
-                                              mv,
-                                              valid_x,
-                                              valid_y)
+        (valid_x, valid_y) = generate_threadsV2(file_path,
+                                                mv,
+                                                300,
+                                                valid_x,
+                                                valid_y)
 
     print "generate test dataset"
     # generate test dataset
     for topic_id in xrange(n_topics):
         file_path = dir_path + "fold_" + str(test_indicator) + "/" + str(topic_id) + ".txt"
-        (test_x, test_y) = generate_threads(file_path,
-                                            mv,
-                                            test_x,
-                                            test_y)
+        (test_x, test_y) = generate_threadsV2(file_path,
+                                              mv,
+                                              300,
+                                              test_x,
+                                              test_y)
     global ERROR_FIND
     global SUCCESS_FIND
     global SHORT_SENS_FIND

@@ -59,6 +59,7 @@ def test_rnn_onestep():
     """
 
     input_var = T.dvector()
+    y_pre_var = T.dvector()
     y_var = T.ivector('y_var')
     n_input = 10
     n_hidden = 50
@@ -66,6 +67,7 @@ def test_rnn_onestep():
     h_tm1 = T.dvector('h_tm1')
 
     rnn_onestep_model = rnn.RNN_OneStep(input_var,
+                                        y_pre_var,
                                         n_input,
                                         n_hidden,
                                         n_output,
@@ -76,11 +78,11 @@ def test_rnn_onestep():
     sen_emb = utils.ndarray_uniform((10,), 0.05)
     h_0 = utils.ndarray_uniform((50,), 0.05)
     y_true = np.asarray([0, 1, 0], dtype=np.int32)
-
-    compute_cost_fn = theano.function(inputs=[input_var, y_var, h_tm1],
+    y_pre = np.asarray([1, 0, 0], dtype=np.int32)
+    compute_cost_fn = theano.function(inputs=[input_var, y_var, y_pre_var, h_tm1],
                                       outputs=[cost_var, rnn_onestep_model.h])
 
-    [cost, h_current] = compute_cost_fn(sen_emb, y_true, h_0)
+    [cost, h_current] = compute_cost_fn(sen_emb, y_true, y_pre, h_0)
     print "the cost of rnn_onestep is %f"%(cost)
     print "the current h of rnn_onestep is :"
     print h_current
@@ -88,7 +90,32 @@ def test_rnn_onestep():
     print "====="
 
 
+def test_srnn():
+    """
+    """
+    n_input = 10
+    n_hidden = 50
+    n_output = 3
+    input_var = T.dmatrix('intput_var')
+
+    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.shared_uniform((10, 10),
+                               dtype=theano.config.floatX)
+
+
+    srnn_model = rnn.SRNN(input_var,
+                          sens_pos,
+                          n_input,
+                          n_hidden,
+                          n_output)
+    srnn_model.build_network()
+    print srnn_model.hidden_states.shape
+    pdb.set_trace()
+    print "[Test SCNN OK!]"
+    return
 
 if __name__ == "__main__":
-    test_rnn()
-    test_rnn_onestep()
+    #test_rnn()
+    #test_rnn_onestep()
+    test_srnn()
