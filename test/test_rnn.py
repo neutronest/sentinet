@@ -96,26 +96,106 @@ def test_srnn():
     n_input = 10
     n_hidden = 50
     n_output = 3
-    input_var = T.dmatrix('intput_var')
-
+    input_var = T.dmatrix('input_var')
     sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
     sens_pos = theano.shared(sens_pos_ndarr)
-    sens = utils.shared_uniform((10, 10),
-                               dtype=theano.config.floatX)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
 
 
     srnn_model = rnn.SRNN(input_var,
-                          sens_pos,
                           n_input,
                           n_hidden,
                           n_output)
     srnn_model.build_network()
-    print srnn_model.hidden_states.shape
-    pdb.set_trace()
+    # print srnn_model.hidden_states.eval()
+    get_hidden_states_fn = theano.function(inputs=[srnn_model.input_var,
+                                                   srnn_model.sens_pos_var],
+                                           outputs=srnn_model.hidden_states_var)
+    hs = get_hidden_states_fn(sens, sens_pos_ndarr)
+    print hs
     print "[Test SCNN OK!]"
     return
 
+def test_trnn():
+    """
+    """
+    srnn_input = 10
+    srnn_hidden = 50
+    srnn_output = 3
+    trnn_hidden = 50
+    trnn_output = 3
+
+    input_var = T.dmatrix('input_var')
+    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
+    relations = np.asarray([[0, -1],
+                            [1, 0],
+                            [2, 0]], dtype=np.int32)
+
+    tree = np.asarray(np.zeros((trnn_hidden*(len(relations)+1),),
+                               dtype=theano.config.floatX))
+
+    srnn_model = rnn.SRNN(input_var,
+                          srnn_input,
+                          srnn_hidden,
+                          srnn_output)
+    srnn_model.build_network()
+
+    input_t_var = T.dmatrix('input_t_var')
+    trnn_model = rnn.TRNN(input_t_var,
+                          srnn_hidden,
+                          trnn_hidden,
+                          trnn_output)
+    trnn_model.build_network()
+    get_srnn_h_fn = theano.function(inputs=[srnn_model.input_var,
+                                            srnn_model.sens_pos_var],
+                                    outputs=srnn_model.hidden_states_var)
+    get_trnn_h_fn = theano.function(inputs=[trnn_model.input_var,
+                                            trnn_model.relation_pairs,
+                                            trnn_model.th],
+                                    outputs=trnn_model.y_pred)
+    hs = get_srnn_h_fn(sens, sens_pos_ndarr)
+    print hs
+
+    ts = get_trnn_h_fn(hs, relations, tree)
+    print ts
+    print "[Test TRNN OK!]"
+    return
+
+def test_srnn_trnn():
+    """
+    """
+    srnn_input = 10
+    srnn_hidden = 50
+    srnn_output = 3
+    trnn_hidden = 50
+    trnn_output = 3
+
+    input_var = T.dmatrix('input_var')
+    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
+    relations = np.asarray([[0, -1],
+                            [1, 0],
+                            [2, 0]], dtype=np.int32)
+    tree_states = np.asarray(np.zeros((4, trnn_hidden),
+                                      dtype=theano.config.floatX))
+    srnn_trnn_model = rnn.SRNN_TRNN(inupt_var,
+                                    srnn_input,
+                                    srnn_hidden,
+                                    srnn_output,
+                                    trnn_input,
+                                    trnn_hidden,
+                                    trnn_output)
+
+    print "[Test SRNN-TRNN OK!]"
+    return
 if __name__ == "__main__":
     #test_rnn()
     #test_rnn_onestep()
     test_srnn()
+    test_trnn()

@@ -179,8 +179,8 @@ def generate_words_emb(words, mvectorize):
         for i in xrange(remain_dim):
             word_vector = np.asarray(np.zeros((300,), dtype=theano.config.floatX))
             words_emb.append(word_vector)
-    return np.asarray(words_emb, dtype=theano.config.floatX)
-
+    #return np.asarray(words_emb, dtype=theano.config.floatX)
+    return words_emb
 
 
 def generate_threadsV2(file_path,
@@ -202,9 +202,9 @@ def generate_threadsV2(file_path,
 
     data_x: the X of train/valid/test
         type: {threadid:[word_embs_flatten,
-                         {docid:(sen_start_pos, sen_end_pos),..},
+                         [[sen_start_pos, sen_end_pos],..],
                          {h_state_docid:h_state_vector},
-                         [(docid, parentid),...]}
+                         [[docid, parentid],...]}
               threadid: str
               word_embs_flatten: concatenate all word embs of each sentence.
                                  the length is equal to the len(word_emb) * sum(len(each sen))
@@ -228,33 +228,30 @@ def generate_threadsV2(file_path,
             line_json = json.loads(line)
             # parse the conponent
             threadid = str(line_json['threadid'])
-            docid = str(line_json['docid'])
-            parent = str(line_json['parent'])
+            docid = int(line_json['docid'])
+            parent = int(line_json['parent'])
             words = line_json['words']
             words_emb = generate_words_emb(words, mvectorize)
             # IMPORTANT! change -1, 0, 1 to 0, 1, 2
             label = int(line_json['label'])+1
 
             if data_x.get(threadid) == None:
-                word_emb_flatten = [words_emb]
-                sens_pos = [0, words_emb.shape[0]-1]
-                h_state = {}
-                h_state[0] = np.asarray(np.zeros((n_hidden,), dtype=theano.config.floatX))
-                relation_seq = [(docid, parent)]
-                data_x[threadid] = (word_emb_flatten, [sens_pos], h_state, relation_seq)
+                sens_pos = [0, len(words_emb) -1]
+                relation_seq = [docid, parent]
+                data_x[threadid] = [words_emb, [sens_pos], [relation_seq]]
             else:
-                data_x[threadid][0].append(words_emb)
+                data_x[threadid][0] += words_emb
                 last_end_pos = data_x[threadid][1][-1][1]
-                data_x[threadid][1].append([last_end_pos+1, last_end_pos+words_emb.shape[0]]+1)
-                #data_x[threadid][1][docid] = (last_end_pos+1, last_end_pos+words_emb.shape[0])
-                data_x[threadid][2][docid] = np.asarray(np.zeros((n_hidden,),
-                                                                 dtype=theano.config.floatX))
-                data_x[threadid][3].append((docid, parent))
-
+                data_x[threadid][1].append([last_end_pos+1, last_end_pos+len(words_emb)])
+                data_x[threadid][2].append([docid, parent])
             if data_y.get(threadid) == None:
-                data_y[threadid] = [(docid, label)]
+                data_y[threadid] = [label]
             else:
-                data_y[threadid].append((docid, label))
+                data_y[threadid].append(label)
+
+            #print "len of words_emb: " + str(len(words_emb))
+            #print data_x[threadid][1][-1]
+            #print len(data_x[threadid][0])
     return (data_x, data_y)
 
 def generate_threads(file_path, mvectorize, data_x, data_y):

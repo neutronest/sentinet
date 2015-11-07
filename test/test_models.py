@@ -11,6 +11,12 @@ import rnn
 import cnn
 import models
 import utils
+import data_process
+
+#theano.config.on_unused_input='warn'
+#theano.config.exception_verbosity='high'
+theano.config.optimizer='fast_compile'
+
 def test_rcnn_onestep():
     """
     """
@@ -63,5 +69,61 @@ def test_rcnn_onestep():
     print "====="
     return
 
+def test_srnn_trnn():
+    """
+    """
+    srnn_input = 5
+    srnn_hidden = 100
+    srnn_output = 3
+    trnn_input = 100
+    trnn_hidden = 500
+    trnn_output = 3
+
+    input_var = T.dmatrix('input_var')
+    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
+    relations = np.asarray([[0, -1],
+                            [1, 0],
+                            [2, 0]], dtype=np.int32)
+    tree_states = np.asarray(np.zeros((4, trnn_hidden),
+                                      dtype=theano.config.floatX))
+    max_sens_size = 100
+    srnn_trnn_model = models.SRNN_TRNN(input_var,
+                                       srnn_input,
+                                       srnn_hidden,
+                                       srnn_output,
+                                       trnn_input,
+                                       trnn_hidden,
+                                       trnn_output)
+    get_trnn_h_fn = theano.function(inputs=[input_var,
+                                            srnn_trnn_model.sens_pos_var,
+                                            srnn_trnn_model.relation_pairs,
+                                            srnn_trnn_model.trnn_model.th0],
+                                    outputs=[srnn_trnn_model.y_pred])
+
+    get_srnn_h_fn = theano.function(inputs=[input_var,
+                                            srnn_trnn_model.sens_pos_var],
+                                    outputs=srnn_trnn_model.srnn_model.hidden_states_var)
+    #pdb.set_trace()
+    #(train_x, train_y, valid_x, valid_y, test_x, test_y) = data_process.load_microblogdata((0, 1, 2), 3, 4)
+
+    #x = train_x['3512534461952614'][0]
+    #sens_pos = train_x['3512534461952614'][1]
+    #relations = train_x['3512534461952614'][2]
+    x = utils.ndarray_uniform((1,5),
+                              dtype=theano.config.floatX)
+    sens_pos=[[0,1]]
+    relations= [[0,-1]]
+    th_first = np.zeros((1,trnn_hidden),
+                        dtype=theano.config.floatX)
+    #y = get_trnn_h_fn(x, sens_pos, relations)
+    hs = get_srnn_h_fn(x, sens_pos)
+    #print hs
+    y = get_trnn_h_fn(x, sens_pos, relations, th_first)
+    print "[Test SRNN-TRNN OK!]"
+    return
+
 if __name__ == "__main__":
-    test_rcnn_onestep()
+    test_srnn_trnn()

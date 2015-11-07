@@ -17,6 +17,121 @@ import utils
 """
 ======================= MICROBLOG EXPERIMENT ===========
 """
+
+def run_microblog_experimentV2(load_data,
+                               model,
+                               model_name,
+                               batch_type,
+                               batch_size,
+                               n_epochs,
+                               valid_frequency,
+                               learning_rate,
+                               optimizer_method="sgd"):
+    """ the microblog experimentV2
+
+
+    """
+    # prepare data
+    (train_x, train_y, valid_x, valid_y, test_x, test_y) = load_data
+
+    n_train = len(train_x)
+    n_valid = len(valid_x)
+    n_test = len(test_x)
+    logging.info("[==== Data Size description]")
+    logging.info("[the train seqs size is %d]"%(n_train))
+    logging.info("[the valid seqs size is %d]"%(n_valid))
+    logging.info("[the test seqs size is %d]"%(n_test))
+
+    if model_name == "srnn_trnn_model":
+        # DEFINE VARIABLE
+        logging.info("[srnn-trnn model experiment began!]")
+        y_true_var = T.imatrix('y_true_var')
+        y_label_var = T.ivector('y_label_var')
+        cost_var = model.loss(y_true_var, model.y_pred)
+        error_var = model.error(y_label_var, model.output)
+
+        #theano.printing.pydotprint(cost_var, outfile="./graph.png", var_with_name_simple=True)
+        # optimizer define
+        logging.info("[minibatch used]")
+        logging.info("[optimizer define!]")
+        opt = optimizer.SGD(learning_rate=learning_rate)
+        opt.delta_pre_init(model.params)
+        gparams_var_list = T.grad(cost_var, model.params)
+
+        compute_gparams_fn = theano.function(inputs=[model.input_var,
+                                                     y_true_var,
+                                                     model.sens_pos_var,
+                                                     model.relation_pairs,
+                                                     model.th],
+                                             outputs=gparams_var_list)
+        compute_loss_fn = theano.function(inputs=[model.input_var,
+                                                  y_true_var,
+                                                  model.sens_pos_var,
+                                                  model.relation_pairs,
+                                                  model.th],
+                                          outputs=cost_var)
+
+        compute_error_fn = theano.function(inputs=[model.input_var,
+                                                   y_label_var,
+                                                   model.sens_pos_var,
+                                                   model.relation_pairs,
+                                                   model.th],
+                                           outputs=[error_var, model.output])
+
+        epoch = 0
+        seq_idx = 0
+        valid_idx = 0
+        epoch = 0
+
+        train_sen_num = 0
+        train_loss_res = 0.
+        train_loss_sum = 0.
+        train_error = 0.
+        logging.info("=== Begin to Train! ===")
+        while epoch < n_epochs:
+            logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
+            seq_idx = 0
+            epoch += 1
+            for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
+                zip(train_x.items(), train_y.items()):
+                assert(train_threadid_x == train_threadid_y)
+                train_input_x = np.asarray(train_item_x[0],
+                                           dtype=theano.config.floatX)
+                train_input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
+                                           dtype=np.int32)
+                sens_pos = np.asarray(train_item_x[1],
+                                      dtype=np.int32)
+                relation_tree = np.asarray(train_item_x[2],
+                                           dtype=np.int32)
+
+                th_init = np.asarray(np.zeros(model.trnn_model.n_hidden*(len(relation_tree)+1)))
+                #pdb.set_trace()
+                g = compute_gparams_fn(train_input_x,
+                                       train_input_y,
+                                       sens_pos,
+                                       relation_tree,
+                                       th_init)
+                opt.gparams_update(g)
+                train_loss = compute_loss_fn(train_input_x,
+                                             train_input_y,
+                                             sens_pos,
+                                             relation_tree,
+                                             th_init)
+                seq_idx += 1
+                if seq_idx % batch_size == 0:
+                    # update the params
+                    opt.params_update(model.params)
+                if seq_idx % valid_frequency == 0:
+                    # valid
+                    valid_idx += 1
+
+
+
+    return
+
+"""=================================================="""
+
+
 def run_microblog_experiment(load_data,
                              model,
                              model_name,
@@ -345,7 +460,13 @@ if __name__ == "__main__":
     cnn_n_feature_maps = None
     cnn_window_sizes = None
     rnn_n_hidden = None
-    rnn_n_outupt=  None
+    rnn_n_outupt =  None
+    level1_input = None
+    level1_hidden = None
+    level1_output = None
+    level2_input = None
+    level2_hidden = None
+    level2_output = None
     dropout_rate = None
     optimizer_method = None
     learning_rate = None
@@ -361,25 +482,31 @@ if __name__ == "__main__":
     # Get the arguments from command line
     options, args = getopt.getopt(sys.argv[1:], "",
         ["help",
-        "experiment=",
-        "model_name=",
-        "dataset_name=",
-        "log_path=",
-        "word_dim=",
-        "cnn_n_feature_maps=",
-        "cnn_window_sizes=",
-        "rnn_n_hidden=",
-        "rnn_n_output=",
-        "dropout_rate=",
-        "optimizer_method=",
-        "learning_rate=",
-        "batch_type=",
-        "batch_size=",
-        "n_epochs=",
-        "train_pos=",
-        "valid_pos=",
-        "test_pos=",
-        "valid_frequency="])
+         "experiment=",
+         "model_name=",
+         "dataset_name=",
+         "log_path=",
+         "word_dim=",
+         "cnn_n_feature_maps=",
+         "cnn_window_sizes=",
+         "rnn_n_hidden=",
+         "rnn_n_output=",
+         "level1_input=",
+         "level1_hidden=",
+         "level1_output=",
+         "level2_input=",
+         "level2_hidden=",
+         "level2_output=",
+         "dropout_rate=",
+         "optimizer_method=",
+         "learning_rate=",
+         "batch_type=",
+         "batch_size=",
+         "n_epochs=",
+         "train_pos=",
+         "valid_pos=",
+         "test_pos=",
+         "valid_frequency="])
 
     for opt, arg in options:
         print (opt, arg)
@@ -418,6 +545,20 @@ if __name__ == "__main__":
         elif opt == "--rnn_n_output":
             # example of arg: 43 of str
             rnn_n_output = int(arg)
+
+        elif opt == "--level1_input":
+            level1_input = int(arg)
+        elif opt == "--level1_hidden":
+            level1_hidden = int(arg)
+        elif opt == "--level1_output":
+            level1_output = int(arg)
+
+        elif opt == "--level2_input":
+            level2_input = int(arg)
+        elif opt == "--level2_hidden":
+            level2_hidden = int(arg)
+        elif opt == "--level2_output":
+            level2_output = int(arg)
 
         elif opt == "--dropout_rate":
             # example of arg: 0.5 of str
@@ -541,6 +682,34 @@ if __name__ == "__main__":
         logging.info("window_sizes: {}".format(cnn_window_sizes))
         logging.info("n_hidden: %d" % (rnn_n_hidden))
         logging.info("n_out: %d" % (rnn_n_output))
+
+    elif model_name == "srnn_trnn_model":
+        logging.info("define srnn-trnn model now")
+        assert(word_dim != None)
+        assert(level1_input != None)
+        assert(level1_hidden != None)
+        assert(level1_output != None)
+        assert(level2_input != None)
+        assert(level2_hidden != None)
+        assert(level2_output != None)
+        logging.info("model description:")
+        logging.info("=====================")
+        logging.info("model type: srnn-trnn model")
+        logging.info("the first level input layer num: %d"%(level1_input))
+        logging.info("the first level hidden layer num: %d"%(level1_hidden))
+        logging.info("the first level output layer num: %d"%(level1_output))
+        logging.info("the second level input layer num: %d"%(level2_input))
+        logging.info("the second level hidden layer num: %d"%(level2_hidden))
+        logging.info("the second level output layer num: %d"%(level2_output))
+        max_sen_len = 100
+        run_model = models.SRNN_TRNN(x_var,
+                                     level1_input,
+                                     level1_hidden,
+                                     level1_output,
+                                     level2_input,
+                                     level2_hidden,
+                                     level2_output)
+        """================ end srnn-trnn model  ===========  """
     # begin to experiment
     assert(run_model != None)
     assert(load_data != None)
@@ -555,7 +724,7 @@ if __name__ == "__main__":
                             "sgd")
     elif experiment == "microblog":
         logging.info("begin to microblog experiment")
-        run_microblog_experiment(load_data,
+        run_microblog_experimentV2(load_data,
                                  run_model,
                                  model_name,
                                  batch_type,

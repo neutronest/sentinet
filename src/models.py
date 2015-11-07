@@ -6,7 +6,7 @@ import cnn
 import utils
 
 
-class RNN_TRNN(object):
+class SRNN_TRNN(object):
     """
     the rnn-(tree rnn) model
 
@@ -15,11 +15,9 @@ class RNN_TRNN(object):
     """
     def __init__(self,
                  input_var,
-                 word_dim,
-                 sens_pos,
-                 relation_pairs,
-                 rnn_hidden,
-                 rnn_output,
+                 srnn_input,
+                 srnn_hidden,
+                 srnn_output,
                  trnn_input,
                  trnn_hidden,
                  trnn_output):
@@ -29,58 +27,45 @@ class RNN_TRNN(object):
         input_var: the input variable
             type: theano tensor of dvector
 
-        word_dim: the dimension of word vectors
-            type: int (default 300)
-
-        sens_pos: the ndarray store the start pos / end pos
-                        of each sentence in the word flatten vector
-            type: theano tensor of imatrix
-
-        relation_pairs: the
-
         """
 
         self.input_var = input_var
-        self.word_dim = word_dim
-        self.sens_pos = sens_pos
-        self.relation_pairs = relation_pairs
-        self.rnn_hidden = rnn_hidden
-        self.rnn_output = rnn_output # abandon
+        self.srnn_input = srnn_input
+        self.srnn_hidden = srnn_hidden
+        self.srnn_output = srnn_output # abandon
         self.trnn_input = trnn_input
         self.trnn_hidden = trnn_hidden
         self.trnn_output = trnn_output
 
-        self.rnn_model = rnn.RNN(self.word_dim,
-                            self.rnn_hidden,
-                            self.rnn_output)
-        self.trnn_model = rnn.TRNN(self.trnn_input,
+        self.srnn_model = rnn.SRNN(self.input_var,
+                                   self.srnn_input,
+                                   self.srnn_hidden,
+                                   self.srnn_output)
+        self.srnn_model.build_network()
+
+        self.trnn_model = rnn.TRNN(self.srnn_model.hidden_states_var,
+                                   self.trnn_input,
                                    self.trnn_hidden,
                                    self.trnn_output)
+        self.trnn_model.build_network()
 
+        self.sens_pos_var = self.srnn_model.sens_pos_var
+        self.relation_pairs = self.trnn_model.relation_pairs
+        self.th = self.trnn_model.th
+        self.y_pred = self.trnn_model.y_pred
+        self.output = self.trnn_model.output
+        self.loss = self.trnn_model.loss
+        self.error = self.trnn_model.error
+        self.params = [self.srnn_model.W_input,
+                       self.srnn_model.W_hidden,
+                       self.srnn_model.b_h,
+                       self.srnn_model.h0,
+                       self.trnn_model.TW_input,
+                       self.trnn_model.TW_hidden,
+                       self.trnn_model.TW_output,
+                       self.trnn_model.tb_h,
+                       self.trnn_model.tb_y]
         return
-
-    def _get_rnn_hidden_state(self, sen_pos, sens_var):
-        words_var = sens_var.take([i for i in xrange(sen_pos[0], sen_pos[1])])
-        return self.rnn_model.build_network(words_var)
-
-    def build_network(self):
-
-        [y_pred_var, h_var, output, loss, error], _ = theano.scan(fn=self._get_rnn_hidden_state,
-                                                                  sequences=[self.sens_pos],
-                                                                  non_sequences=[self.input_var],
-                                                                  outputs_info=None)
-        # we get a list of h_states with order
-
-
-
-        # first level RNN
-
-
-        return
-
-
-
-
 
 class RCNN_OneStep(object):
     """ The RCNN model with batch 1
