@@ -219,6 +219,9 @@ class SGRU(object):
         self.h0 = utils.shared_zeros((n_hidden,),
                                      dtype=theano.config.floatX,
                                      name='GRU_h0')
+
+
+
         self.params = [self.W_z,
                        self.U_z,
                        self.b_z,
@@ -272,12 +275,90 @@ class TGRU(object):
         self.input_var = input_var
         self.n_input = n_input
         self.n_hidden = n_hidden
-        self.n_output = self.n_output
+        self.n_output = n_output
+        self.relation_pairs = T.imatrix('relation_pairs')
+        self.th = T.dvector('th')
+
+        self.W_z = utils.shared_uniform((n_input, n_hidden),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_W_z')
+        self.U_z = utils.shared_uniform((n_hidden, n_hidden),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_U_z')
+        self.b_z = utils.shared_zeros((n_hidden,),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_b_z')
+
+        self.W_r = utils.shared_uniform((n_input, n_hidden),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_W_r')
+        self.U_r = utils.shared_uniform((n_hidden, n_hidden),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_U_r')
+        self.b_r = utils.shared_zeros((n_hidden,),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_b_r')
+
+        self.W_h = utils.shared_uniform((n_input, n_hidden),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_W_h')
+        self.U_h = utils.shared_uniform((n_hidden, n_hidden),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_U_h')
+        self.b_h = utils.shared_zeros((n_hidden,),
+                                        dtype=theano.config.floatX,
+                                        name='TGRU_b_h')
+        self.W_output = utils.shared_uniform((n_hidden, n_output),
+                                             dtype=theano.config.floatX,
+                                             name="TGRU_W_output")
+        self.b_y = utils.shared_zeros((n_output,),
+                                      dtype=theano.config.floatX,
+                                      name='TGRU_b_y')
+
+        self.params = [self.W_z,
+                       self.U_z,
+                       self.b_z,
+                       self.W_r,
+                       self.U_r,
+                       self.b_r,
+                       self.W_h,
+                       self.U_h,
+                       self.b_h,
+                       self.W_output,
+                       self.b_y]
         return
 
 
+    def _recurrent(self, relation_pair, h_tm1):
+        """
+
+        """
+        c = relation_pair[0]
+        p = relation_pair[1]
+        x_t = self.input_var[c]
+        h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+
+        r_t = T.nnet.sigmoid(T.dot(x_t, self.W_r) + \
+                             T.dot(h_p, self.U_r) + \
+                             self.b_r)
+        z_t = T.nnet.sigmoid(T.dot(x_t, self.W_z) + \
+                             T.dot(h_p, self.U_z) + \
+                             self.b_z)
+        h_c = T.tanh(T.dot(x_t, self.W_h) + \
+                     T.dot((r_t*h_p), self.U_h))
+        h_t = (1 - z_t) * h_p + z_t * h_c
+        h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
+        y_t = T.dot(h_t, self.W_output) + self.b_y
+        return h_next, y_t
 
     def build_network(self):
+        [self.h, self.y], _ = theano.scan(fn=self._recurrent,
+                                          sequences=self.relation_pairs,
+                                          outputs_info=[self.th, None])
+        self.y_pred = T.nnet.softmax(self.y)
+        self.output = T.argmax(self.y_pred, axis=1)
+        self.loss = loss.nll_multiclass
+        self.error = loss.mean_classify_error
         return
 
 

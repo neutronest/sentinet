@@ -16,7 +16,7 @@ python main.py \
     --batch_type=minibatch \
     --batch_size=100 \
     --n_epochs=50 \
-    --train_pos=0@1@2 \
-    --valid_pos=3 \
+    --train_pos=0@1@2@3 \
+    --valid_pos=4 \
     --test_pos=4 \
     --valid_frequency=500

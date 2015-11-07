@@ -194,8 +194,87 @@ def test_srnn_trnn():
 
     print "[Test SRNN-TRNN OK!]"
     return
+
+def test_sgru():
+    """
+    """
+    n_input = 10
+    n_hidden = 50
+    n_output = 3
+    input_var = T.dmatrix('input_var')
+    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
+
+
+    sgru_model = rnn.SGRU(input_var,
+                          n_input,
+                          n_hidden,
+                          n_output)
+    sgru_model.build_network()
+    # print srnn_model.hidden_states.eval()
+    get_hidden_states_fn = theano.function(inputs=[sgru_model.input_var,
+                                                   sgru_model.sens_pos_var],
+                                           outputs=sgru_model.hidden_states_var)
+    hs = get_hidden_states_fn(sens, sens_pos_ndarr)
+    print hs
+    print "[Test SGRU OK!]"
+    return
+
+def test_tgru():
+    """
+    """
+    srnn_input = 10
+    srnn_hidden = 50
+    srnn_output = 3
+    trnn_hidden = 50
+    trnn_output = 3
+
+    input_var = T.dmatrix('input_var')
+    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
+    relations = np.asarray([[0, -1],
+                            [1, 0],
+                            [2, 0]], dtype=np.int32)
+
+    tree = np.asarray(np.zeros((trnn_hidden*(len(relations)+1),),
+                               dtype=theano.config.floatX))
+
+    sgru_model = rnn.SGRU(input_var,
+                          srnn_input,
+                          srnn_hidden,
+                          srnn_output)
+    sgru_model.build_network()
+
+    input_t_var = T.dmatrix('input_t_var')
+    tgru_model = rnn.TGRU(input_t_var,
+                          srnn_hidden,
+                          trnn_hidden,
+                          trnn_output)
+    tgru_model.build_network()
+    get_srnn_h_fn = theano.function(inputs=[sgru_model.input_var,
+                                            sgru_model.sens_pos_var],
+                                    outputs=sgru_model.hidden_states_var)
+    get_trnn_h_fn = theano.function(inputs=[tgru_model.input_var,
+                                            tgru_model.relation_pairs,
+                                            tgru_model.th],
+                                    outputs=tgru_model.y_pred)
+    hs = get_srnn_h_fn(sens, sens_pos_ndarr)
+    print hs
+
+    ts = get_trnn_h_fn(hs, relations, tree)
+    print ts
+    print "[Test TGRU OK!]"
+
+
+
 if __name__ == "__main__":
     #test_rnn()
     #test_rnn_onestep()
-    test_srnn()
-    test_trnn()
+    #test_srnn()
+    #test_trnn()
+    #test_sgru()
+    test_tgru()

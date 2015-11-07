@@ -83,10 +83,9 @@ def run_microblog_experimentV2(load_data,
         valid_idx = 0
         epoch = 0
 
-        train_sen_num = 0
+        train_num = 0
         train_loss_res = 0.
         train_loss_sum = 0.
-        train_error = 0.
         logging.info("=== Begin to Train! ===")
         while epoch < n_epochs:
             logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
@@ -117,15 +116,63 @@ def run_microblog_experimentV2(load_data,
                                              sens_pos,
                                              relation_tree,
                                              th_init)
+                train_loss_sum += train_loss
+                train_num += 1
                 seq_idx += 1
                 if seq_idx % batch_size == 0:
                     # update the params
                     opt.params_update(model.params)
+                    train_loss_res = train_loss_sum / train_num
+                    logging.info("train loss: %f"%(train_loss_res))
+                    # reinit
+                    train_num = 0
+                    train_loss_sum = 0.
+                    train_loss_res = 0.
+
+
                 if seq_idx % valid_frequency == 0:
                     # valid
+                    valid_num = 0
+                    valid_loss_sum = 0.
+                    valid_loss_res = 0.
+                    valid_error_sum = 0.
+                    valid_error_res = 0.
+                    sen_num = 0.
+                    logging.info("=== valid process %d==="%(valid_idx))
                     valid_idx += 1
-
-
+                    for(valid_threadid_x, valid_item_x), (valid_threadid_y, valid_item_y) in \
+                       zip(valid_x.items(), valid_y.items()):
+                        assert(valid_threadid_x == valid_threadid_y)
+                        valid_input_x = np.asarray(valid_item_x[0],
+                                                   dtype=theano.config.floatX)
+                        valid_input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in valid_item_y],
+                                                   dtype=np.int32)
+                        valid_label_y = np.asarray(valid_item_y,
+                                                   dtype=np.int32)
+                        sens_pos = np.asarray(valid_item_x[1],
+                                              dtype=np.int32)
+                        relation_tree = np.asarray(valid_item_x[2],
+                                                   dtype=np.int32)
+                        th_init = np.asarray(np.zeros(model.trnn_model.n_hidden*(len(relation_tree)+1)))
+                        valid_loss = compute_loss_fn(valid_input_x,
+                                                     valid_input_y,
+                                                     sens_pos,
+                                                     relation_tree,
+                                                     th_init)
+                        valid_error = compute_error_fn(valid_input_x,
+                                                       valid_label_y,
+                                                       sens_pos,
+                                                       relation_tree,
+                                                       th_init)
+                        valid_loss_sum += valid_loss
+                        valid_num += 1
+                        valid_error_sum += sum(valid_error)
+                        sen_num += len(relation_tree)
+                    # caculate the result
+                    valid_loss_res = valid_loss_sum / valid_num
+                    valid_error_sum = valid_error_sum / sen_num
+                    logging.info("the %d's valid loss is %f"%(valid_idx, valid_loss_res))
+                    logging.info("the %d's valid error is %f"%(valid_idx, valid_error_sum))
 
     return
 
