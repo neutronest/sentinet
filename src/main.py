@@ -173,6 +173,9 @@ def run_microblog_experimentV2(load_data,
                     valid_error_sum = valid_error_sum / sen_num
                     logging.info("the %d's valid loss is %f"%(valid_idx, valid_loss_res))
                     logging.info("the %d's valid error is %f"%(valid_idx, valid_error_sum))
+                # end each thread
+            # end each epoch
+            opt.learning_rate_decay()
 
     return
 
