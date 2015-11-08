@@ -51,4 +51,5 @@ def mean_classify_error(label_true, label_pred):
     label_pred: the predict label of data
     type: theano.variable dtype=np.int32
     """
-    return T.neq(label_true, label_pred)
+    error_var = T.neq(label_true, label_pred)
+    return error_var

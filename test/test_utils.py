@@ -96,7 +96,23 @@ def test_mask():
     return
 
 
+
+def test_error():
+    y_true_var = T.ivector('y_true_var')
+    y_pred_var = T.ivector('y_pred_var')
+    y_true = [1, 2, 0, 1]
+    y_pred = [0, 0, 0, 0]
+    error_var = loss.mean_classify_error(y_true_var, y_pred_var)
+    fn = theano.function(inputs=[y_true_var,
+                                 y_pred_var],
+                           outputs=error_var)
+    res = fn(y_true, y_pred)
+    print res
+    pdb.set_trace()
+    return
+
 if __name__ == "__main__":
     #test_binary_loss()
     #test_mask()
-    test_nll_multiclass()
+    #test_nll_multiclass()
+    test_error()

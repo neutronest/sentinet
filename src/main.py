@@ -159,14 +159,14 @@ def run_microblog_experimentV2(load_data,
                                                      sens_pos,
                                                      relation_tree,
                                                      th_init)
-                        valid_error = compute_error_fn(valid_input_x,
-                                                       valid_label_y,
-                                                       sens_pos,
-                                                       relation_tree,
-                                                       th_init)
+                        [valid_error, valid_output] = compute_error_fn(valid_input_x,
+                                                                       valid_label_y,
+                                                                       sens_pos,
+                                                                       relation_tree,
+                                                                       th_init)
                         valid_loss_sum += valid_loss
                         valid_num += 1
-                        valid_error_sum += sum(valid_error)
+                        valid_error_sum += sum([i for i in valid_error if i == 1])
                         sen_num += len(relation_tree)
                     # caculate the result
                     valid_loss_res = valid_loss_sum / valid_num

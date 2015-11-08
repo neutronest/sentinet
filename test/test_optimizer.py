@@ -76,5 +76,18 @@ def test_sgd():
     return
 
 
+def test_error():
+    y_true_var = T.ivector('y_true_var')
+    y_pred_var = T.ivectro('y_pred_var')
+    y_true = [1, 2, 0, 1]
+    y_pred = [0, 0, 0, 0]
+    error_var = loss.mean_classify_error(y_true_var, y_pred_var)
+    fn = theano.function(inputs=[y_true_var,
+                                   y_pred_var]
+                           outputs=r)
+    res = fn(y_true, y_pred)
+    print res
+    pdb.set_trace()
+    return
 if __name__ == "__main__":
     test_sgd()
