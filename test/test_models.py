@@ -125,5 +125,33 @@ def test_srnn_trnn():
     print "[Test SRNN-TRNN OK!]"
     return
 
+def test_sgru_tgru():
+    """
+    """
+    n_input = 10
+    n_hidden = 50
+    n_output = 3
+    input_var = T.dmatrix('input_var')
+    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
+
+    sgru_tgru_model = models.SGRU_TGRU(input_var,
+                                       n_input,
+                                       n_hidden,
+                                       n_output,
+                                       n_hidden,
+                                       n_hidden,
+                                       n_output)
+
+    get_trnn_h_fn = theano.function(inputs=[input_var,
+                                            srnn_trnn_model.sens_pos_var,
+                                            srnn_trnn_model.relation_pairs,
+                                            srnn_trnn_model.trnn_model.th0],
+                                    outputs=[srnn_trnn_model.y_pred])
+
+    return
+
 if __name__ == "__main__":
     test_srnn_trnn()

@@ -69,7 +69,7 @@ def run_microblog_experimentV2(load_data,
                                                   model.sens_pos_var,
                                                   model.relation_pairs,
                                                   model.th],
-                                          outputs=cost_var)
+                                          outputs=[cost_var, model.y_pred])
 
         compute_error_fn = theano.function(inputs=[model.input_var,
                                                    y_label_var,
@@ -94,6 +94,7 @@ def run_microblog_experimentV2(load_data,
             for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
                 zip(train_x.items(), train_y.items()):
                 assert(train_threadid_x == train_threadid_y)
+
                 train_input_x = np.asarray(train_item_x[0],
                                            dtype=theano.config.floatX)
                 train_input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
@@ -104,24 +105,30 @@ def run_microblog_experimentV2(load_data,
                                            dtype=np.int32)
 
                 th_init = np.asarray(np.zeros(model.trnn_model.n_hidden*(len(relation_tree)+1)))
-                #pdb.set_trace()
+
                 g = compute_gparams_fn(train_input_x,
                                        train_input_y,
                                        sens_pos,
                                        relation_tree,
                                        th_init)
                 opt.gparams_update(g)
-                train_loss = compute_loss_fn(train_input_x,
+                [train_loss, y] = compute_loss_fn(train_input_x,
                                              train_input_y,
                                              sens_pos,
                                              relation_tree,
                                              th_init)
+
                 train_loss_sum += train_loss
                 train_num += 1
                 seq_idx += 1
                 if seq_idx % batch_size == 0:
                     # update the params
+                    print "g acc"
+                    print opt.gparams_acc[8]
                     opt.params_update(model.params)
+                    print "param"
+                    print model.params[8].eval()
+                    print " param end ==="
                     train_loss_res = train_loss_sum / train_num
                     logging.info("train loss: %f"%(train_loss_res))
                     # reinit
@@ -154,7 +161,7 @@ def run_microblog_experimentV2(load_data,
                         relation_tree = np.asarray(valid_item_x[2],
                                                    dtype=np.int32)
                         th_init = np.asarray(np.zeros(model.trnn_model.n_hidden*(len(relation_tree)+1)))
-                        valid_loss = compute_loss_fn(valid_input_x,
+                        [valid_loss, valid_output] = compute_loss_fn(valid_input_x,
                                                      valid_input_y,
                                                      sens_pos,
                                                      relation_tree,

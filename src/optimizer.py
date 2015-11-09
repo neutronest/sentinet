@@ -46,9 +46,10 @@ class SGD(OPTIMIZER):
         self.n_acc = 0
         self.delta_pre = {}
         self.learning_rate = learning_rate
+        self.momentum = momentum
         self.decay = decay
-        self.lr_var = shared_scalar(self.learning_rate)
-        self.momentum_var = shared_scalar(momentum)
+        #self.lr_var = shared_scalar(self.learning_rate)
+        #self.momentum_var = shared_scalar(momentum)
 
     def delta_pre_init(self, params):
         """
@@ -61,21 +62,13 @@ class SGD(OPTIMIZER):
         """
         """
         for param, gparam in zip(params, self.gparams_acc):
-            weight_update = self.delta_pre[param]
-            ugd = self.momentum_var * weight_update - gparam * self.lr_var / self.n_acc
-            self.updates[weight_update] = ugd
-            self.updates[param] = param + ugd
+            weight_update = self.delta_pre[param].get_value()
+            ugd = self.momentum * weight_update - gparam * self.learning_rate / self.n_acc
+            #self.updates[weight_update] = ugd
+            #self.updates[param] = param + ugd
+            param.set_value(param.get_value() + ugd)
+            self.delta_pre[param].set_value(ugd)
 
-        f = theano.function(inputs=[],
-                            outputs=None,
-                            updates=self.updates)
-        f()
-        """
-        for i in xrange(len(params)):
-            ugd = self.momentum_var * self.delta_pre[i] - self.gparams_acc[i] / self.n_acc * self.lr_var
-            self.delta_pre[i] = ugd
-            self.updates[i] = params[i] + ugd
-        """
         # re-init
         self.gparams_acc = None
         #print params[6][-1].eval()

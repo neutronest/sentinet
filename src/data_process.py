@@ -177,7 +177,7 @@ def generate_words_emb(words, mvectorize):
         remain_dim = 5 - len(words_emb)
         # TODO: use 300 here is MAGIC! Need to touch
         for i in xrange(remain_dim):
-            word_vector = np.asarray(np.zeros((300,), dtype=theano.config.floatX))
+            word_vector = np.asarray(np.zeros((200,), dtype=theano.config.floatX))
             words_emb.append(word_vector)
     #return np.asarray(words_emb, dtype=theano.config.floatX)
     return words_emb
@@ -342,10 +342,10 @@ def load_microblogdata(train_indicators,
         for topic_id in xrange(n_topics):
             file_path = dir_path + "fold_" + str(i) + "/" + str(topic_id) + ".txt"
             (train_x, train_y) = generate_threadsV2(file_path,
-                                                  mv,
-                                                  300,
-                                                  train_x,
-                                                  train_y)
+                                                    mv,
+                                                    200,
+                                                    train_x,
+                                                    train_y)
 
     print "generate valid dataset"
     # generate valid dataset
@@ -353,7 +353,7 @@ def load_microblogdata(train_indicators,
         file_path = dir_path + "fold_" + str(valid_indicator) + "/" + str(topic_id) + ".txt"
         (valid_x, valid_y) = generate_threadsV2(file_path,
                                                 mv,
-                                                300,
+                                                200,
                                                 valid_x,
                                                 valid_y)
 
@@ -363,7 +363,7 @@ def load_microblogdata(train_indicators,
         file_path = dir_path + "fold_" + str(test_indicator) + "/" + str(topic_id) + ".txt"
         (test_x, test_y) = generate_threadsV2(file_path,
                                               mv,
-                                              300,
+                                              200,
                                               test_x,
                                               test_y)
     global ERROR_FIND

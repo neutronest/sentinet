@@ -160,7 +160,7 @@ class TRNN(object):
 
         self.y_pred = T.nnet.softmax(self.y)
         self.output = T.argmax(self.y_pred, axis=1)
-        self.loss = loss.nll_multiclass
+        self.loss = loss.binary_crossentropy
         self.error = loss.mean_classify_error
         return
 

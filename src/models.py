@@ -67,6 +67,55 @@ class SRNN_TRNN(object):
                        self.trnn_model.tb_y]
         return
 
+class SGRU_TGRU(object):
+    """
+
+    """
+    def __init__(self,
+                 input_var,
+                 sgru_input,
+                 sgru_hidden,
+                 sgru_output,
+                 tgru_input,
+                 tgru_hidden,
+                 tgru_output):
+        """
+        the SGRU-TGRU init
+
+        """
+        self.input_var = input_var
+        self.sgru_input = sgru_input
+        self.sgru_hidden = sgru_hidden
+        self.sgru_output = sgru_output
+        self.tgru_input = tgru_input
+        self.tgru_hidden = tgru_hidden
+        self.tgru_output = tgru_output
+
+        self.sgru_model = rnn.SGRU(self.input_var,
+                                   self.sgru_input,
+                                   self.sgru_hidden,
+                                   self.sgru_output)
+        self.sgru_model.build_network()
+
+        self.tgru_model = rnn.TGRU(self.sgru_model.hidden_states_var,
+                                   self.tgru_input,
+                                   self.tgru_hidden,
+                                   self.tgru_output)
+        self.tgru_model.build_network()
+        self.sens_pos_var = self.sgru_model.sens_pos_var
+        self.relation_pairs = self.tgru_model.relation_pairs
+        self.th = self.tgru_model.th
+        self.y_pred = self.tgru_model.y_pred
+        self.output = self.tgru_model.output
+        self.loss = self.tgru_model.loss
+        self.error = self.tgru_model.error
+        self.params = self.sgru_model.params + self.tgru_model.params
+        return
+
+
+
+
+
 class RCNN_OneStep(object):
     """ The RCNN model with batch 1
 
