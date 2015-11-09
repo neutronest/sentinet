@@ -344,6 +344,7 @@ class TGRU(object):
         z_t = T.nnet.sigmoid(T.dot(x_t, self.W_z) + \
                              T.dot(h_p, self.U_z) + \
                              self.b_z)
+
         h_c = T.tanh(T.dot(x_t, self.W_h) + \
                      T.dot((r_t*h_p), self.U_h) + \
                      self.b_h)

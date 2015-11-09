@@ -37,6 +37,9 @@ class SRNN_TRNN(object):
         self.trnn_hidden = trnn_hidden
         self.trnn_output = trnn_output
 
+        # trick
+        self.level2_hidden = trnn_hidden
+
         self.srnn_model = rnn.SRNN(self.input_var,
                                    self.srnn_input,
                                    self.srnn_hidden,
@@ -90,6 +93,9 @@ class SGRU_TGRU(object):
         self.tgru_input = tgru_input
         self.tgru_hidden = tgru_hidden
         self.tgru_output = tgru_output
+
+        # trick
+        self.level2_hidden = tgru_hidden
 
         self.sgru_model = rnn.SGRU(self.input_var,
                                    self.sgru_input,

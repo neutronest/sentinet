@@ -104,7 +104,7 @@ def run_microblog_experimentV2(load_data,
                 relation_tree = np.asarray(train_item_x[2],
                                            dtype=np.int32)
 
-                th_init = np.asarray(np.zeros(model.trnn_model.n_hidden*(len(relation_tree)+1)))
+                th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
 
                 g = compute_gparams_fn(train_input_x,
                                        train_input_y,
