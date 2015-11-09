@@ -239,7 +239,7 @@ class SGRU(object):
 
         r_t = T.nnet.sigmoid(T.dot(x_t, self.W_r) + T.dot(h_tm1, self.U_r) + self.b_r)
         z_t = T.nnet.sigmoid(T.dot(x_t, self.W_z) + T.dot(h_tm1, self.U_z) + self.b_z)
-        h_c = T.tanh(T.dot(x_t, self.W_h) + T.dot((r_t * h_tm1), self.U_h))
+        h_c = T.tanh(T.dot(x_t, self.W_h) + T.dot((r_t * h_tm1), self.U_h) + self.b_h)
         h = (1-z_t) * h_tm1 + z_t * h_c
         return h
 
@@ -345,7 +345,8 @@ class TGRU(object):
                              T.dot(h_p, self.U_z) + \
                              self.b_z)
         h_c = T.tanh(T.dot(x_t, self.W_h) + \
-                     T.dot((r_t*h_p), self.U_h))
+                     T.dot((r_t*h_p), self.U_h) + \
+                     self.b_h)
         h_t = (1 - z_t) * h_p + z_t * h_c
         h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
         y_t = T.dot(h_t, self.W_output) + self.b_y

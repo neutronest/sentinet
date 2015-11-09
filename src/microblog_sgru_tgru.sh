@@ -14,7 +14,7 @@ python main.py \
     --optimizer_method=sgd \
     --learning_rate=0.01 \
     --batch_type=minibatch \
-    --batch_size=500 \
+    --batch_size=1 \
     --n_epochs=100 \
     --train_pos=0@1@2@3 \
     --valid_pos=4 \
