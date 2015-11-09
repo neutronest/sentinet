@@ -42,9 +42,9 @@ def run_microblog_experimentV2(load_data,
     logging.info("[the valid seqs size is %d]"%(n_valid))
     logging.info("[the test seqs size is %d]"%(n_test))
 
-    if model_name == "srnn_trnn_model":
+    if model_name == "srnn_trnn_model" or model_name ==  "sgru_tgru_model":
         # DEFINE VARIABLE
-        logging.info("[srnn-trnn model experiment began!]")
+        logging.info("%d experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
         y_label_var = T.ivector('y_label_var')
         cost_var = model.loss(y_true_var, model.y_pred)
@@ -767,6 +767,32 @@ if __name__ == "__main__":
                                      level2_hidden,
                                      level2_output)
         """================ end srnn-trnn model  ===========  """
+    elif model_name == "sgru_tgru_model":
+        logging.info("define sgru-tgru model now")
+        assert(word_dim != None)
+        assert(level1_input != None)
+        assert(level1_hidden != None)
+        assert(level1_output != None)
+        assert(level2_input != None)
+        assert(level2_hidden != None)
+        assert(level2_output != None)
+        logging.info("model description:")
+        logging.info("=====================")
+        logging.info("model type: SGRU-TGRU model")
+        logging.info("the first level input layer num: %d"%(level1_input))
+        logging.info("the first level hidden layer num: %d"%(level1_hidden))
+        logging.info("the first level output layer num: %d"%(level1_output))
+        logging.info("the second level input layer num: %d"%(level2_input))
+        logging.info("the second level hidden layer num: %d"%(level2_hidden))
+        logging.info("the second level output layer num: %d"%(level2_output))
+        run_model = models.SGRU_TGRU(x_var,
+                                     level1_input,
+                                     level1_hidden,
+                                     level1_output,
+                                     level2_input,
+                                     level2_hidden,
+                                     level2_output)
+        """=========== end sgru-tgru model =========="""
     # begin to experiment
     assert(run_model != None)
     assert(load_data != None)
@@ -782,13 +808,13 @@ if __name__ == "__main__":
     elif experiment == "microblog":
         logging.info("begin to microblog experiment")
         run_microblog_experimentV2(load_data,
-                                 run_model,
-                                 model_name,
-                                 batch_type,
-                                 batch_size,
-                                 n_epochs,
-                                 valid_frequency,
-                                 learning_rate,
-                                 "sgd")
+                                   run_model,
+                                   model_name,
+                                   batch_type,
+                                   batch_size,
+                                   n_epochs,
+                                   valid_frequency,
+                                   learning_rate,
+                                   "sgd")
     # different dataset has different variable types
     # dtensor3, imatrix

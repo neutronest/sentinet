@@ -136,6 +136,14 @@ def test_sgru_tgru():
     sens_pos = theano.shared(sens_pos_ndarr)
     sens = utils.ndarray_uniform((10, 10),
                                  dtype=theano.config.floatX)
+    relations = np.asarray([[0, -1],
+                            [1, 0],
+                            [2, 0]], dtype=np.int32)
+
+    tree = np.asarray(np.zeros((n_hidden*(len(relations)+1),),
+                               dtype=theano.config.floatX))
+
+
 
     sgru_tgru_model = models.SGRU_TGRU(input_var,
                                        n_input,
@@ -146,14 +154,19 @@ def test_sgru_tgru():
                                        n_output)
 
     get_model_y_fn = theano.function(inputs=[input_var,
-                                            sgru_tgru_model.sens_pos_var,
-                                            sgru_tgru_model.relation_pairs,
-                                            sgru_tgru_model.trnn_model.th0],
+                                             sgru_tgru_model.sens_pos_var,
+                                             sgru_tgru_model.relation_pairs,
+                                             sgru_tgru_model.th],
                                     outputs=[sgru_tgru_model.y_pred])
 
-    y_res = get_model_y_fn()
+    y_res = get_model_y_fn(sens,
+                           sens_pos_ndarr,
+                           relations,
+                           tree)
+    print y_res
 
     return
 
 if __name__ == "__main__":
-    test_srnn_trnn()
+    #test_srnn_trnn()
+    test_sgru_tgru()

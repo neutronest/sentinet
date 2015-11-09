@@ -12,9 +12,9 @@ python main.py \
     --level2_output=3 \
     --dropout_rate=0.5 \
     --optimizer_method=sgd \
-    --learning_rate=0.05 \
+    --learning_rate=0.01 \
     --batch_type=minibatch \
-    --batch_size=200 \
+    --batch_size=1000 \
     --n_epochs=50 \
     --train_pos=0@1@2@3 \
     --valid_pos=4 \
