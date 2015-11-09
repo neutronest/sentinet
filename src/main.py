@@ -160,7 +160,7 @@ def run_microblog_experimentV2(load_data,
                                               dtype=np.int32)
                         relation_tree = np.asarray(valid_item_x[2],
                                                    dtype=np.int32)
-                        th_init = np.asarray(np.zeros(model.trnn_model.n_hidden*(len(relation_tree)+1)))
+                        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
                         [valid_loss, valid_output] = compute_loss_fn(valid_input_x,
                                                      valid_input_y,
                                                      sens_pos,
