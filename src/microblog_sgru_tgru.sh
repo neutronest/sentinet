@@ -1,8 +1,8 @@
 python main.py \
     --experiment=microblog \
-    --model_name=sgru_tgru__model \
+    --model_name=sgru_tgru_model \
     --dataset_name=microblog \
-    --log_path=../logs/microblog_srnn_trnn_3.txt  \
+    --log_path=../logs/microblog_sgru_tgru_1.txt  \
     --word_dim=200 \
     --level1_input=200 \
     --level1_hidden=300 \
@@ -15,7 +15,7 @@ python main.py \
     --learning_rate=0.01 \
     --batch_type=minibatch \
     --batch_size=500 \
-    --n_epochs=200 \
+    --n_epochs=100 \
     --train_pos=0@1@2@3 \
     --valid_pos=4 \
     --test_pos=4 \
