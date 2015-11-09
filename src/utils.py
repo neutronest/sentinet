@@ -47,10 +47,10 @@ def sharedX(X, dtype=theano.config.floatX, name=None):
     return theano.shared(np.asarray(X, dtype=dtype), name=name)
 
 
-def ndarray_uniform(shape, scale=0.05, dtype=theano.config.floatX):
+def ndarray_uniform(shape, scale=0.01, dtype=theano.config.floatX):
     return np.asarray(np.random.uniform(low=-scale, high=scale, size=(shape)), dtype=dtype)
 
-def shared_uniform(shape, scale=0.05, dtype=theano.config.floatX, name=None):
+def shared_uniform(shape, scale=0.01, dtype=theano.config.floatX, name=None):
     """
     theano uniform generator
     """

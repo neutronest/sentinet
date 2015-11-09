@@ -145,11 +145,13 @@ def test_sgru_tgru():
                                        n_hidden,
                                        n_output)
 
-    get_trnn_h_fn = theano.function(inputs=[input_var,
-                                            srnn_trnn_model.sens_pos_var,
-                                            srnn_trnn_model.relation_pairs,
-                                            srnn_trnn_model.trnn_model.th0],
-                                    outputs=[srnn_trnn_model.y_pred])
+    get_model_y_fn = theano.function(inputs=[input_var,
+                                            sgru_tgru_model.sens_pos_var,
+                                            sgru_tgru_model.relation_pairs,
+                                            sgru_tgru_model.trnn_model.th0],
+                                    outputs=[sgru_tgru_model.y_pred])
+
+    y_res = get_model_y_fn()
 
     return
 
