@@ -77,5 +77,5 @@ class SGD(OPTIMIZER):
     def learning_rate_decay(self):
         #self.learning_rate *= (1-self.decay)
         #self.lr_var = shared_scalar(self.learning_rate)
-        self.lr_var *= (1 - self.decay)
+        self.learning_rate *= (1-self.decay)
         return
