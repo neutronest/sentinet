@@ -193,7 +193,7 @@ def test_slstm_tlstm():
                                dtype=theano.config.floatX))
 
     slstm_tlstm_model = models.SLSTM_TLSTM(input_var,
-                                            level1_input,
+                                           level1_input,
                                            level1_hidden,
                                            level1_output,
                                            level2_input,

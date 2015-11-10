@@ -24,9 +24,8 @@ def run_microblog_experimentV2(load_data,
                                batch_type,
                                batch_size,
                                n_epochs,
-                               valid_frequency,
                                learning_rate,
-                               optimizer_method="sgd"):
+                               optimizer_method):
     """ the microblog experimentV2
 
 
@@ -42,7 +41,9 @@ def run_microblog_experimentV2(load_data,
     logging.info("[the valid seqs size is %d]"%(n_valid))
     logging.info("[the test seqs size is %d]"%(n_test))
 
-    if model_name == "srnn_trnn_model" or model_name ==  "sgru_tgru_model":
+    if model_name == "srnn_trnn_model" \
+       or model_name ==  "sgru_tgru_model" \
+       or model_name == "slstm_tlstm_model":
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
@@ -53,36 +54,65 @@ def run_microblog_experimentV2(load_data,
         #theano.printing.pydotprint(cost_var, outfile="./graph.png", var_with_name_simple=True)
         # optimizer define
         logging.info("[minibatch used]")
-        logging.info("[optimizer define!]")
-        opt = optimizer.SGD(learning_rate=learning_rate)
-        opt.delta_pre_init(model.params)
+        logging.info("[optimizer %s define!]"%(optimizer_method))
+        if optimizer_method == "sgd":
+            opt = optimizer.SGD(learning_rate=learning_rate)
+            opt.delta_pre_init(model.params)
+        if optimizer_method == "adadelta":
+            opt = optimizer.ADADELTA(model.params)
+
         gparams_var_list = T.grad(cost_var, model.params)
+        if model_name == "srnn_trnn_model" or \
+           model_name == "sgru_tgru_model":
 
-        compute_gparams_fn = theano.function(inputs=[model.input_var,
-                                                     y_true_var,
-                                                     model.sens_pos_var,
-                                                     model.relation_pairs,
-                                                     model.th],
-                                             outputs=gparams_var_list)
-        compute_loss_fn = theano.function(inputs=[model.input_var,
-                                                  y_true_var,
-                                                  model.sens_pos_var,
-                                                  model.relation_pairs,
-                                                  model.th],
-                                          outputs=[cost_var, model.y_pred])
+            compute_gparams_fn = theano.function(inputs=[model.input_var,
+                                                         y_true_var,
+                                                         model.sens_pos_var,
+                                                         model.relation_pairs,
+                                                         model.th],
+                                                 outputs=gparams_var_list)
+            compute_loss_fn = theano.function(inputs=[model.input_var,
+                                                      y_true_var,
+                                                      model.sens_pos_var,
+                                                      model.relation_pairs,
+                                                      model.th],
+                                              outputs=[cost_var, model.y_pred])
 
-        compute_error_fn = theano.function(inputs=[model.input_var,
-                                                   y_label_var,
-                                                   model.sens_pos_var,
-                                                   model.relation_pairs,
-                                                   model.th],
-                                           outputs=[error_var, model.output])
+            compute_error_fn = theano.function(inputs=[model.input_var,
+                                                       y_label_var,
+                                                       model.sens_pos_var,
+                                                       model.relation_pairs,
+                                                       model.th],
+                                               outputs=[error_var, model.output])
+        if model_name == "slstm_tlstm_model":
+
+            compute_gparams_fn = theano.function(inputs=[model.input_var,
+                                                         y_true_var,
+                                                         model.sens_pos_var,
+                                                         model.relation_pairs,
+                                                         model.th,
+                                                         model.tc],
+                                                 outputs=gparams_var_list)
+            compute_loss_fn = theano.function(inputs=[model.input_var,
+                                                      y_true_var,
+                                                      model.sens_pos_var,
+                                                      model.relation_pairs,
+                                                      model.th,
+                                                      model.tc],
+                                              outputs=[cost_var, model.y_pred])
+
+            compute_error_fn = theano.function(inputs=[model.input_var,
+                                                       y_label_var,
+                                                       model.sens_pos_var,
+                                                       model.relation_pairs,
+                                                       model.th,
+                                                       model.tc],
+                                               outputs=[error_var, model.output])
 
         epoch = 0
         seq_idx = 0
         valid_idx = 0
         epoch = 0
-
         train_num = 0
         train_loss_res = 0.
         train_loss_sum = 0.
@@ -94,7 +124,7 @@ def run_microblog_experimentV2(load_data,
             for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
                 zip(train_x.items(), train_y.items()):
                 assert(train_threadid_x == train_threadid_y)
-
+                # prepare train data
                 train_input_x = np.asarray(train_item_x[0],
                                            dtype=theano.config.floatX)
                 train_input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
@@ -105,30 +135,43 @@ def run_microblog_experimentV2(load_data,
                                            dtype=np.int32)
 
                 th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
+                tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
 
-                g = compute_gparams_fn(train_input_x,
-                                       train_input_y,
-                                       sens_pos,
-                                       relation_tree,
-                                       th_init)
-                opt.gparams_update(g)
-                [train_loss, y] = compute_loss_fn(train_input_x,
-                                             train_input_y,
-                                             sens_pos,
-                                             relation_tree,
-                                             th_init)
+                if model_name == "srnn_trnn_model" or \
+                   model_name == "sgru_tgru_model":
 
+                    g = compute_gparams_fn(train_input_x,
+                                           train_input_y,
+                                           sens_pos,
+                                           relation_tree,
+                                           th_init)
+                    opt.gparams_update(g)
+                    [train_loss, y] = compute_loss_fn(train_input_x,
+                                                      train_input_y,
+                                                      sens_pos,
+                                                      relation_tree,
+                                                      th_init)
+                if model_name == "slstm_tlstm_model":
+                    g = compute_gparams_fn(train_input_x,
+                                           train_input_y,
+                                           sens_pos,
+                                           relation_tree,
+                                           th_init,
+                                           tc_init)
+                    opt.gparams_update(g)
+                    [train_loss, y] = compute_loss_fn(train_input_x,
+                                                      train_input_y,
+                                                      sens_pos,
+                                                      relation_tree,
+                                                      th_init,
+                                                      tc_init)
+                # endif
                 train_loss_sum += train_loss
                 train_num += 1
                 seq_idx += 1
                 if seq_idx % batch_size == 0:
                     # update the params
-                    print "g acc"
-                    print opt.gparams_acc[8]
                     opt.params_update(model.params)
-                    print "param"
-                    print model.params[8].eval()
-                    print " param end ==="
                     train_loss_res = train_loss_sum / train_num
                     logging.info("train loss: %f"%(train_loss_res))
                     # reinit
@@ -137,52 +180,70 @@ def run_microblog_experimentV2(load_data,
                     train_loss_res = 0.
 
 
-                if seq_idx % valid_frequency == 0:
-                    # valid
-                    valid_num = 0
-                    valid_loss_sum = 0.
-                    valid_loss_res = 0.
-                    valid_error_sum = 0.
-                    valid_error_res = 0.
-                    sen_num = 0.
-                    logging.info("=== valid process %d==="%(valid_idx))
-                    valid_idx += 1
-                    for(valid_threadid_x, valid_item_x), (valid_threadid_y, valid_item_y) in \
-                       zip(valid_x.items(), valid_y.items()):
-                        assert(valid_threadid_x == valid_threadid_y)
-                        valid_input_x = np.asarray(valid_item_x[0],
-                                                   dtype=theano.config.floatX)
-                        valid_input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in valid_item_y],
-                                                   dtype=np.int32)
-                        valid_label_y = np.asarray(valid_item_y,
-                                                   dtype=np.int32)
-                        sens_pos = np.asarray(valid_item_x[1],
-                                              dtype=np.int32)
-                        relation_tree = np.asarray(valid_item_x[2],
-                                                   dtype=np.int32)
-                        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
-                        [valid_loss, valid_output] = compute_loss_fn(valid_input_x,
-                                                     valid_input_y,
-                                                     sens_pos,
-                                                     relation_tree,
-                                                     th_init)
-                        [valid_error, valid_output] = compute_error_fn(valid_input_x,
-                                                                       valid_label_y,
-                                                                       sens_pos,
-                                                                       relation_tree,
-                                                                       th_init)
-                        valid_loss_sum += valid_loss
-                        valid_num += 1
-                        valid_error_sum += sum([i for i in valid_error if i == 1])
-                        sen_num += len(relation_tree)
-                    # caculate the result
-                    valid_loss_res = valid_loss_sum / valid_num
-                    valid_error_sum = valid_error_sum / sen_num
-                    logging.info("the %d's valid loss is %f"%(valid_idx, valid_loss_res))
-                    logging.info("the %d's valid error is %f"%(valid_idx, valid_error_sum))
-                # end each thread
+
+            # valid process
+            valid_num = 0
+            valid_loss_sum = 0.
+            valid_loss_res = 0.
+            valid_error_sum = 0.
+            valid_error_res = 0.
+            sen_num = 0.
+            logging.info("=== valid process %d==="%(valid_idx))
+            valid_idx += 1
+            for(valid_threadid_x, valid_item_x), (valid_threadid_y, valid_item_y) in \
+               zip(valid_x.items(), valid_y.items()):
+                assert(valid_threadid_x == valid_threadid_y)
+                valid_input_x = np.asarray(valid_item_x[0],
+                                           dtype=theano.config.floatX)
+                valid_input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in valid_item_y],
+                                           dtype=np.int32)
+                valid_label_y = np.asarray(valid_item_y,
+                                           dtype=np.int32)
+                sens_pos = np.asarray(valid_item_x[1],
+                                      dtype=np.int32)
+                relation_tree = np.asarray(valid_item_x[2],
+                                           dtype=np.int32)
+                th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
+                tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
+
+                if model_name == "srnn_trnn_model" or \
+                   model_name == "sgru_tgru_model":
+                    [valid_loss, valid_output] = compute_loss_fn(valid_input_x,
+                                                                 valid_input_y,
+                                                                 sens_pos,
+                                                                 relation_tree,
+                                                                 th_init)
+                    [valid_error, valid_output] = compute_error_fn(valid_input_x,
+                                                                   valid_label_y,
+                                                                   sens_pos,
+                                                                   relation_tree,
+                                                                   th_init)
+                if model_name == "slstm_tlstm_model":
+                    [valid_loss, valid_output] = compute_loss_fn(valid_input_x,
+                                                                 valid_input_y,
+                                                                 sens_pos,
+                                                                 relation_tree,
+                                                                 th_init,
+                                                                 tc_init)
+                    [valid_error, valid_output] = compute_error_fn(valid_input_x,
+                                                                   valid_label_y,
+                                                                   sens_pos,
+                                                                   relation_tree,
+                                                                   th_init,
+                                                                   tc_init)
+                valid_loss_sum += valid_loss
+                valid_num += 1
+                valid_error_sum += sum([i for i in valid_error if i == 1])
+                sen_num += len(relation_tree)
+            # caculate the result
+            valid_loss_res = valid_loss_sum / valid_num
+            valid_error_sum = valid_error_sum / sen_num
+            logging.info("the %d's valid loss is %f"%(valid_idx, valid_loss_res))
+            logging.info("the %d's valid error is %f"%(valid_idx, valid_error_sum))
+            # end each thread
             # end each epoch
-            opt.learning_rate_decay()
+            if optimizer_method == "sgd":
+                opt.learning_rate_decay()
 
     return
 
@@ -622,9 +683,7 @@ if __name__ == "__main__":
             dropout_rate = float(arg)
 
         elif opt == "--optimizer_method":
-            if arg == "sgd":
-                optimizer_method = optimizer.SGD()
-            # TODO: other optimizer
+            optimizer_method = arg
 
         elif opt == "--learning_rate":
             # example of arg: 0.01 of str
@@ -689,7 +748,22 @@ if __name__ == "__main__":
     """
     ========= Choose Model ==============
     """
-
+    assert(word_dim != None)
+    assert(level1_input != None)
+    assert(level1_hidden != None)
+    assert(level1_output != None)
+    assert(level2_input != None)
+    assert(level2_hidden != None)
+    assert(level2_output != None)
+    logging.info("model description:")
+    logging.info("=====================")
+    logging.info("model type: srnn-trnn model")
+    logging.info("the first level input layer num: %d"%(level1_input))
+    logging.info("the first level hidden layer num: %d"%(level1_hidden))
+    logging.info("the first level output layer num: %d"%(level1_output))
+    logging.info("the second level input layer num: %d"%(level2_input))
+    logging.info("the second level hidden layer num: %d"%(level2_hidden))
+    logging.info("the second level output layer num: %d"%(level2_output))
     # define model
     assert(model_name != None)
     if model_name == "rcnn":
@@ -742,23 +816,6 @@ if __name__ == "__main__":
 
     elif model_name == "srnn_trnn_model":
         logging.info("define srnn-trnn model now")
-        assert(word_dim != None)
-        assert(level1_input != None)
-        assert(level1_hidden != None)
-        assert(level1_output != None)
-        assert(level2_input != None)
-        assert(level2_hidden != None)
-        assert(level2_output != None)
-        logging.info("model description:")
-        logging.info("=====================")
-        logging.info("model type: srnn-trnn model")
-        logging.info("the first level input layer num: %d"%(level1_input))
-        logging.info("the first level hidden layer num: %d"%(level1_hidden))
-        logging.info("the first level output layer num: %d"%(level1_output))
-        logging.info("the second level input layer num: %d"%(level2_input))
-        logging.info("the second level hidden layer num: %d"%(level2_hidden))
-        logging.info("the second level output layer num: %d"%(level2_output))
-        max_sen_len = 100
         run_model = models.SRNN_TRNN(x_var,
                                      level1_input,
                                      level1_hidden,
@@ -769,22 +826,6 @@ if __name__ == "__main__":
         """================ end srnn-trnn model  ===========  """
     elif model_name == "sgru_tgru_model":
         logging.info("define sgru-tgru model now")
-        assert(word_dim != None)
-        assert(level1_input != None)
-        assert(level1_hidden != None)
-        assert(level1_output != None)
-        assert(level2_input != None)
-        assert(level2_hidden != None)
-        assert(level2_output != None)
-        logging.info("model description:")
-        logging.info("=====================")
-        logging.info("model type: SGRU-TGRU model")
-        logging.info("the first level input layer num: %d"%(level1_input))
-        logging.info("the first level hidden layer num: %d"%(level1_hidden))
-        logging.info("the first level output layer num: %d"%(level1_output))
-        logging.info("the second level input layer num: %d"%(level2_input))
-        logging.info("the second level hidden layer num: %d"%(level2_hidden))
-        logging.info("the second level output layer num: %d"%(level2_output))
         run_model = models.SGRU_TGRU(x_var,
                                      level1_input,
                                      level1_hidden,
@@ -792,13 +833,22 @@ if __name__ == "__main__":
                                      level2_input,
                                      level2_hidden,
                                      level2_output)
-        """=========== end sgru-tgru model =========="""
+    elif model_name == "slstm_tlstm_model":
+        logging.info("define slstm_tlstm  model now")
+        run_model = models.SLSTM_TLSTM(x_var,
+                                       level1_input,
+                                       level1_hidden,
+                                       level1_output,
+                                       level2_input,
+                                       level2_hidden,
+                                       level2_output)
+
     # begin to experiment
     assert(run_model != None)
     assert(load_data != None)
     assert(batch_type != None)
     assert(batch_size != None)
-    assert(valid_frequency != None)
+    #assert(valid_frequency != None)
     if experiment == "swda":
         run_swda_experiment(load_data,
                             run_model,
@@ -813,8 +863,7 @@ if __name__ == "__main__":
                                    batch_type,
                                    batch_size,
                                    n_epochs,
-                                   valid_frequency,
                                    learning_rate,
-                                   "sgd")
+                                   optimizer_method)
     # different dataset has different variable types
     # dtensor3, imatrix
