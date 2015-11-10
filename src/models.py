@@ -156,7 +156,7 @@ class SLSTM_TLSTM(object):
         self.th = self.tlstm_model.th
         self.tc = self.tlstm_model.tc
         self.y_pred = self.tlstm_model.y_pred
-        self.output = self.tlstm_mdoel.output
+        self.output = self.tlstm_model.output
         self.loss = self.tlstm_model.loss
         self.error = self.tlstm_model.error
         self.params = self.slstm_model.params + self.tlstm_model.params

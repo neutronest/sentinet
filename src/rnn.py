@@ -457,7 +457,7 @@ class SLSTM(object):
                      T.dot(h_tm1, self.U_c) + \
                      self.b_c)
         c_t = i_t * c_c + f_t * c_tm1
-        o_t = T.nnet_sigmoid(T.dot(x_t, self.W_o) + \
+        o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_tm1, self.U_o) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
@@ -544,14 +544,6 @@ class TLSTM(object):
                                       dtype=theano.config.floatX,
                                       name='TLSTM_b_o')
 
-        self.h0 = utils.shared_zeros((n_hidden,),
-                                     dtype=theano.config.floatX,
-                                     name='TLSTM_h0')
-
-        self.c0 = utils.shared_zeros((n_hidden,),
-                                     dtype=theano.config.floatX,
-                                     name='TLSTM_c0')
-
         self.W_output = utils.shared_orthogonal((n_hidden, n_output),
                                                 dtype=theano.config.floatX,
                                                 name='TLSTM_W_outupt')
@@ -563,8 +555,7 @@ class TLSTM(object):
                        self.W_f, self.U_f, self.b_f,
                        self.W_c, self.U_c, self.U_c,
                        self.W_o, self.U_o, self.b_o,
-                       self.W_output, self.b_y,
-                       self.h0, self.c0]
+                       self.W_output, self.b_y]
 
         return
 
@@ -588,7 +579,7 @@ class TLSTM(object):
                      T.dot(h_p, self.U_c) + \
                      self.b_c)
         c_t = i_t * c_c + f_t * c_p
-        o_t = T.nnet_sigmoid(T.dot(x_t, self.W_o) + \
+        o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_p, self.U_o) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
@@ -601,7 +592,7 @@ class TLSTM(object):
     def build_network(self):
         [self.h, self.c, self.y], _ = theano.scan(fn=self._recurrent,
                                                   sequences=self.relation_pairs,
-                                                  outputs_info=[self.th0, self.tc0])
+                                                  outputs_info=[self.th, self.tc, None])
         self.y_pred = T.nnet.softmax(self.y)
         self.output = T.argmax(self.y_pred, axis=1)
         self.loss = loss.nll_multiclass

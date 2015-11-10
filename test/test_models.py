@@ -155,7 +155,8 @@ def test_sgru_tgru():
 
     get_model_y_fn = theano.function(inputs=[input_var,
                                              sgru_tgru_model.sens_pos_var,
-                                             sgru_tgru_model.relation_pairs,
+                                             sgru_tgru_model
+                                             .relation_pairs,
                                              sgru_tgru_model.th],
                                     outputs=[sgru_tgru_model.y_pred])
 
@@ -167,6 +168,53 @@ def test_sgru_tgru():
 
     return
 
+def test_slstm_tlstm():
+    """
+
+    """
+    level1_input = 10
+    level1_hidden = 50
+    level1_output = 3
+    level2_input = 50
+    level2_hidden = 50
+    level2_output = 3
+    input_var = T.dmatrix('input_var')
+    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
+    relations = np.asarray([[0, -1],
+                            [1, 0],
+                            [2, 0]], dtype=np.int32)
+
+    th0 = np.asarray(np.zeros((level2_hidden*(len(relations)+1),),
+                               dtype=theano.config.floatX))
+    tc0 = np.asarray(np.zeros((level2_hidden*(len(relations)+1),),
+                               dtype=theano.config.floatX))
+
+    slstm_tlstm_model = models.SLSTM_TLSTM(input_var,
+                                            level1_input,
+                                           level1_hidden,
+                                           level1_output,
+                                           level2_input,
+                                           level2_hidden,
+                                           level2_output)
+
+    get_model_y_fn = theano.function(inputs=[input_var,
+                                             slstm_tlstm_model.sens_pos_var,
+                                             slstm_tlstm_model.relation_pairs,
+                                             slstm_tlstm_model.th,
+                                             slstm_tlstm_model.tc,],
+                                     outputs=[slstm_tlstm_model.y_pred])
+
+    y_res = get_model_y_fn(sens,
+                           sens_pos_ndarr,
+                           relations,
+                           th0,
+                           tc0)
+    print y_res
+    return
 if __name__ == "__main__":
     #test_srnn_trnn()
-    test_sgru_tgru()
+    #test_sgru_tgru()
+    test_slstm_tlstm()
