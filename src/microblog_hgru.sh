@@ -1,0 +1,22 @@
+python main.py \
+    --experiment=microblog \
+    --model_name=sgru_tgru_model \
+    --dataset_name=microblog \
+    --log_path=../logs/microblog_hgru_1.txt  \
+    --word_dim=200 \
+    --level1_input=200 \
+    --level1_hidden=300 \
+    --level1_output=3 \
+    --level2_input=300 \
+    --level2_hidden=500 \
+    --level2_output=3 \
+    --dropout_rate=0.5 \
+    --optimizer_method=adadelta \
+    --learning_rate=1 \
+    --batch_type=minibatch \
+    --batch_size=1 \
+    --n_epochs=200 \
+    --train_pos=0@1@2@3 \
+    --valid_pos=4 \
+    --test_pos=4 \
+    --valid_frequency=1000
