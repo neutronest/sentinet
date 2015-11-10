@@ -111,8 +111,18 @@ def test_error():
     pdb.set_trace()
     return
 
+def test_shared_orthogonal():
+
+    param_init = utils.shared_orthogonal((10, 10),
+                                         scale=1.1,
+                                         dtype=theano.config.floatX,
+                                         name='W')
+    print param_init.get_value()
+    return
+
 if __name__ == "__main__":
     #test_binary_loss()
     #test_mask()
     #test_nll_multiclass()
-    test_error()
+    #test_error()
+    test_shared_orthogonal()

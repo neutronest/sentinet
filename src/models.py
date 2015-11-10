@@ -118,8 +118,50 @@ class SGRU_TGRU(object):
         self.params = self.sgru_model.params + self.tgru_model.params
         return
 
+class SLSTM_TLSTM(object):
+    """
+    """
+    def __init__(self,
+                 input_var,
+                 level1_input,
+                 level1_hidden,
+                 level1_output,
+                 level2_input,
+                 level2_hidden,
+                 level2_output):
+        """
+        The SLSTM-TLSTM init
+        """
+        self.input_var = input_var
+        self.level1_input = level1_input
+        self.level1_hidden = level1_hidden
+        self.level1_output = level1_output
+        self.level2_input = level2_input
+        self.level2_hidden = level2_hidden
+        self.level2_output = level2_output
 
+        self.slstm_model = rnn.SLSTM(self.input_var,
+                                     self.level1_input,
+                                     self.level1_hidden,
+                                     self.level1_output)
+        self.slstm_model.build_network()
 
+        self.tlstm_model = rnn.TLSTM(self.slstm_model.hidden_states_var,
+                                     self.level2_input,
+                                     self.level2_hidden,
+                                     self.level2_output)
+        self.tlstm_model.build_network()
+        self.sens_pos_var = self.slstm_model.sens_pos_var
+        self.relation_pairs = self.tlstm_model.relation_pairs
+        self.th = self.tlstm_model.th
+        self.tc = self.tlstm_model.tc
+        self.y_pred = self.tlstm_model.y_pred
+        self.output = self.tlstm_mdoel.output
+        self.loss = self.tlstm_model.loss
+        self.error = self.tlstm_model.error
+        self.params = self.slstm_model.params + self.tlstm_model.params
+        return
+        return
 
 
 class RCNN_OneStep(object):

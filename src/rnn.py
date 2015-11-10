@@ -352,7 +352,6 @@ class TGRU(object):
         h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
         y_t = T.dot(h_t, self.W_output) + self.b_y
         return h_next, y_t
-
     def build_network(self):
         [self.h, self.y], _ = theano.scan(fn=self._recurrent,
                                           sequences=self.relation_pairs,
@@ -363,6 +362,251 @@ class TGRU(object):
         self.error = loss.mean_classify_error
         return
 
+"""
+==================== END TGRU ========================
+
+==================== START SLSTM =====================
+
+"""
+
+class SLSTM(object):
+    """ the sequence LSTM """
+    def __init__(self,
+                 input_var,
+                 n_input,
+                 n_hidden,
+                 n_output):
+        self.input_var = input_var
+        self.sens_pos_var = T.imatrix('sens_pos_var')
+        self.n_input = n_input
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+
+        self.W_i = utils.shared_orthogonal((n_input, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='SLSTM_W_i')
+        self.U_i = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='SLSTM_U_i')
+        self.b_i = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='SLSTM_b_i')
+
+        self.W_f = utils.shared_orthogonal((n_input, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='SLSTM_W_f')
+        self.U_f = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='SLSTM_U_f')
+        self.b_f = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='SLSTM_b_f')
+
+        self.W_c = utils.shared_orthogonal((n_input, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='SLSTM_W_c')
+        self.U_c = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='SLSTM_U_c')
+        self.b_c = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='SLSTM_b_c')
+
+        self.W_o = utils.shared_orthogonal((n_input, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='SLSTM_W_o')
+        self.U_o = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='SLSTM_U_o')
+        self.b_o = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='SLSTM_b_o')
+
+        self.h0 = utils.shared_zeros((n_hidden,),
+                                     dtype=theano.config.floatX,
+                                     name='SLSTM_h0')
+
+        self.c0 = utils.shared_zeros((n_hidden,),
+                                     dtype=theano.config.floatX,
+                                     name='SLSTM_c0')
+
+        self.params = [self.W_i, self.U_i, self.b_i,
+                       self.W_f, self.U_f, self.b_f,
+                       self.W_c, self.U_c, self.U_c,
+                       self.W_o, self.U_o, self.b_o,
+                       self.h0, self.c0]
+        return
+
+    def _recurrent(self, x_t, h_tm1, c_tm1):
+        i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
+                             T.dot(h_tm1, self.U_i) + \
+                             self.b_i)
+        f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
+                             T.dot(h_tm1, self.U_f) + \
+                             self.b_f)
+        # c candiate
+        c_c = T.tanh(T.dot(x_t, self.W_c) + \
+                     T.dot(h_tm1, self.U_c) + \
+                     self.b_c)
+        c_t = i_t * c_c + f_t * c_tm1
+        o_t = T.nnet_sigmoid(T.dot(x_t, self.W_o) + \
+                             T.dot(h_tm1, self.U_o) + \
+                             self.b_o)
+        h_t = o_t * T.tanh(c_t)
+        return h_t, c_t
+
+    def _get_h(self, sen_pos):
+        words_var = self.input_var[sen_pos[0]:sen_pos[1]]
+        [h, c], _ = theano.scan(fn=self._recurrent,
+                                sequences=words_var,
+                                outputs_info=[self.h0, self.c0])
+        return h[-1]
+
+    def build_network(self):
+        """
+        """
+        h, _ = theano.scan(fn=self._get_h,
+                           sequences=self.sens_pos_var,
+                           outputs_info=None)
+        self.hidden_states_var = h
+        return
+
+class TLSTM(object):
+    """
+    Tree LSTM (from top to bottom..)
+    """
+    def __init__(self,
+                 input_var,
+                 n_input,
+                 n_hidden,
+                 n_output):
+        self.input_var = input_var
+        self.n_input = n_input
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+        self.relation_pairs = T.imatrix('relation_pairs')
+        self.th = T.dvector('th')
+        self.tc = T.dvector('tc')
+
+        self.W_i = utils.shared_orthogonal((n_input, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='TLSTM_W_i')
+        self.U_i = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='TLSTM_U_i')
+        self.b_i = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='TLSTM_b_i')
+
+        self.W_f = utils.shared_orthogonal((n_input, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='TLSTM_W_f')
+        self.U_f = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='TLSTM_U_f')
+        self.b_f = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='TLSTM_b_f')
+
+        self.W_c = utils.shared_orthogonal((n_input, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='TLSTM_W_c')
+        self.U_c = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='TLSTM_U_c')
+        self.b_c = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='TLSTM_b_c')
+
+        self.W_o = utils.shared_orthogonal((n_input, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='TLSTM_W_o')
+        self.U_o = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           scale=1.,
+                                           dtype=theano.config.floatX,
+                                           name='TLSTM_U_o')
+        self.b_o = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='TLSTM_b_o')
+
+        self.h0 = utils.shared_zeros((n_hidden,),
+                                     dtype=theano.config.floatX,
+                                     name='TLSTM_h0')
+
+        self.c0 = utils.shared_zeros((n_hidden,),
+                                     dtype=theano.config.floatX,
+                                     name='TLSTM_c0')
+
+        self.W_output = utils.shared_orthogonal((n_hidden, n_output),
+                                                dtype=theano.config.floatX,
+                                                name='TLSTM_W_outupt')
+        self.b_y = utils.shared_zeros((n_output,),
+                                      dtype=theano.config.floatX,
+                                      name='TLSTM_b_y')
+
+        self.params = [self.W_i, self.U_i, self.b_i,
+                       self.W_f, self.U_f, self.b_f,
+                       self.W_c, self.U_c, self.U_c,
+                       self.W_o, self.U_o, self.b_o,
+                       self.W_output, self.b_y,
+                       self.h0, self.c0]
+
+        return
+
+    def _recurrent(self, relation_pair, h_tm1, c_tm1):
+        """
+        """
+        c = relation_pair[0]
+        p = relation_pair[1]
+        x_t = self.input_var[c]
+        h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+        c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+
+        i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
+                             T.dot(h_p, self.U_i) + \
+                             self.b_i)
+        f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
+                             T.dot(h_p, self.U_f) + \
+                             self.b_f)
+        # c candiate
+        c_c = T.tanh(T.dot(x_t, self.W_c) + \
+                     T.dot(h_p, self.U_c) + \
+                     self.b_c)
+        c_t = i_t * c_c + f_t * c_p
+        o_t = T.nnet_sigmoid(T.dot(x_t, self.W_o) + \
+                             T.dot(h_p, self.U_o) + \
+                             self.b_o)
+        h_t = o_t * T.tanh(c_t)
+
+        h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
+        c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
+        y_t = T.dot(h_t, self.W_output) + self.b_y
+        return h_next, c_next, y_t
+
+    def build_network(self):
+        [self.h, self.c, self.y], _ = theano.scan(fn=self._recurrent,
+                                                  sequences=self.relation_pairs,
+                                                  outputs_info=[self.th0, self.tc0])
+        self.y_pred = T.nnet.softmax(self.y)
+        self.output = T.argmax(self.y_pred, axis=1)
+        self.loss = loss.nll_multiclass
+        self.error = loss.mean_classify_error
+        return
 
 class RNN_OneStep(object):
     """ the simple RNN without "scan".

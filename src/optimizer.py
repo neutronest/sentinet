@@ -79,3 +79,35 @@ class SGD(OPTIMIZER):
         #self.lr_var = shared_scalar(self.learning_rate)
         self.learning_rate *= (1-self.decay)
         return
+
+class ADADELTA(OPTIMIZER):
+    """
+    the ada-delta optimizer appraoch
+    """
+    def __init__(self,
+                params,
+                learning_rate=1,
+                decay=0.95,
+                epsilon=1e-6):
+        OPTIMIZER.__init__(self)
+        self.learning_rate = learning_rate
+        self.decay = decay
+        self.epsilon = epsilon
+        self.n_acc = 0
+        self.acc_grad = {}
+        self.acc_update = {}
+        for param in params:
+            self.acc_grad[param] = np.zeros_like(param.get_value())
+            self.acc_update[param] = np.zeros_like(param.get_value())
+        return
+
+    def params_update(self, params):
+        for param, gparam in zip(params, self.gparams_acc):
+            self.acc_grad[param] = self.decay * self.acc_grad[param] + \
+                                   (1 - self.decay) * gparam.get_value()**2
+            ugd = np.sqrt(self.acc_update[param] + self.epsilon) / \
+                  np.sqrt(self.acc_grad[param] + self.epsilon) * gparam.get_value() * self.learning_rate
+            self.acc_update[param] = self.learning_rate * self.acc_update[param] + \
+                                     (1 - self.decay) * ugd**2
+            param.set_value(param.get_value() - ugd)
+        return
