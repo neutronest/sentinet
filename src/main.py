@@ -332,8 +332,6 @@ if __name__ == "__main__":
          "word_dim=",
          "cnn_n_feature_maps=",
          "cnn_window_sizes=",
-         "rnn_n_hidden=",
-         "rnn_n_output=",
          "level1_input=",
          "level1_hidden=",
          "level2_input=",
@@ -385,22 +383,10 @@ if __name__ == "__main__":
         elif opt == "--cnn_window_sizes":
             # example of arg: 2,3,4 of str
             cnn_window_sizes = tuple([int(t) for t in arg.split("@")])
-
-        elif opt == "--rnn_n_hidden":
-            # example of arg: 300 of str
-            rnn_n_hidden = int(arg)
-
-        elif opt == "--rnn_n_output":
-            # example of arg: 43 of str
-            rnn_n_output = int(arg)
-
         elif opt == "--level1_input":
             level1_input = int(arg)
         elif opt == "--level1_hidden":
             level1_hidden = int(arg)
-        elif opt == "--level1_output":
-            level1_output = int(arg)
-
         elif opt == "--level2_input":
             level2_input = int(arg)
         elif opt == "--level2_hidden":
