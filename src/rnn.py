@@ -111,7 +111,7 @@ class TRNN(object):
                                        dtype=theano.config.floatX,
                                        name='tby')
 
-        self.th = T.dvector('th')
+        self.th = T.vector('th')
         self.params = [self.TW_input,
                        self.TW_hidden,
                        self.TW_output,
@@ -256,7 +256,7 @@ class TGRU(object):
         self.n_input = n_input
         self.n_hidden = n_hidden
         self.relation_pairs = T.imatrix('relation_pairs')
-        self.th = T.dvector('th')
+        self.th = T.vector('th')
 
         self.W_z = utils.shared_uniform((n_input, n_hidden),
                                         dtype=theano.config.floatX,
@@ -464,8 +464,8 @@ class TLSTM(object):
         self.n_input = n_input
         self.n_hidden = n_hidden
         self.relation_pairs = T.imatrix('relation_pairs')
-        self.th = T.dvector('th')
-        self.tc = T.dvector('tc')
+        self.th = T.vector('th')
+        self.tc = T.vector('tc')
 
         self.W_i = utils.shared_orthogonal((n_input, n_hidden),
                                            scale=1.,

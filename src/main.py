@@ -458,7 +458,7 @@ if __name__ == "__main__":
     elif dataset_name == "microblog":
         logging.info("loading microblog data now!")
         load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos)
-        x_var = T.dmatrix('x_var')
+        x_var = T.matrix('x_var')
 
 
     """
