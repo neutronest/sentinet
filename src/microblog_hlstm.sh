@@ -1,10 +1,10 @@
-cmd ="python main.py
+cmd="python main.py
     --experiment=microblog
     --model_name=slstm_tlstm_model
     --level1_model_name=slstm_model
     --level2_model_name=tlstm_model
     --dataset_name=microblog
-    --log_path=../logs/weibo_hlstm_1.txt
+    --log_path=../logs/weibo_hlstm_gpu_1.txt
     --word_dim=200
     --level1_input=200
     --level1_hidden=200

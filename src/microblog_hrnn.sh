@@ -1,10 +1,10 @@
-cmd ="python main.py
+cmd="python main.py
     --experiment=microblog
     --model_name=srnn_trnn_model
     --level1_model_name=srnn_model
     --level2_model_name=trnn_model
     --dataset_name=microblog
-    --log_path=../logs/weibo_hrnn_1.txt
+    --log_path=../logs/weibo_hrnn_gpu_1.txt
     --word_dim=200
     --level1_input=200
     --level1_hidden=200
