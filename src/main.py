@@ -123,8 +123,10 @@ def check_process(check_idx,
                               dtype=np.int32)
         relation_tree = np.asarray(check_item_x[2],
                                    dtype=np.int32)
-        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
-        tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
+        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
+                                      dtype=theano.config.floatX))
+        tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
+                                      dtype=theano.config.floatX))
 
         (check_loss, check_error, check_output) = check_compute(model_name,
                                                                 loss_fn,
@@ -267,8 +269,10 @@ def run_microblog_experimentV2(load_data,
                 relation_tree = np.asarray(train_item_x[2],
                                            dtype=np.int32)
 
-                th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
-                tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1)))
+                th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
+                                              dtype=theano.config.floatX))
+                tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
+                                              dtype=theano.config.floatX))
 
                 (g, train_loss, y) = train_process(model_name,
                                                    compute_gparams_fn,
