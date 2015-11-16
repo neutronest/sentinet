@@ -1,3 +1,4 @@
+#!/bin/bash
 cmd="python main.py
     --experiment=microblog
     --model_name=srnn_trnn_model
@@ -11,6 +12,8 @@ cmd="python main.py
     --level2_input=200
     --level2_hidden=200
     --n_output=3
+    --cnn_n_feature_maps=100
+    --cnn_window_sizes=2@3@4
     --dropout_rate=0.5
     --optimizer_method=adadelta
     --learning_rate=1
