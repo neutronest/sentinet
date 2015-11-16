@@ -214,7 +214,109 @@ def test_slstm_tlstm():
                            tc0)
     print y_res
     return
+
+
+def test_scnn_trnn():
+    level1_input = 10
+    level1_hidden = 50
+    level2_input = 50
+    level2_hidden = 50
+    n_output = 3
+    word_dim = 200
+    n_feature_maps = 100
+    window_sizes  = (2,3)
+    input_var = T.dmatrix('input_var')
+
+    scnn_trnn_model = models.SCNN_TRNN(input_var,
+                                       word_dim,
+                                       n_feature_maps,
+                                       window_sizes,
+                                       level2_input,
+                                       level2_hidden,
+                                       n_output
+    )
+
+
+def test_model():
+    level1_model_names = ['scnn_model',
+                          'srnn_model',
+                          'sgru_model',
+                          'slstm_model']
+    level2_model_names = ['trnn_model',
+                          'tgru_model',
+                          'tlstm_model']
+    input_var = T.dmatrix('input_var')
+    level1_input = 10
+    level1_hidden = 50
+    level2_input = 50
+    level2_hidden = 50
+    n_output = 3
+    word_dim = 10
+    n_feature_maps = 100
+    window_sizes = [1,2,3]
+
+    sens_pos_ndarr = np.asarray([[0, 2], [3,5], [6,9]], dtype=np.int32)
+    sens_pos = theano.shared(sens_pos_ndarr)
+    sens = utils.ndarray_uniform((10, 10),
+                                 dtype=theano.config.floatX)
+    relations = np.asarray([[0, -1],
+                            [1, 0],
+                            [2, 0]], dtype=np.int32)
+
+    th0 = np.asarray(np.zeros((level2_hidden*(len(relations)+1),),
+                               dtype=theano.config.floatX))
+    tc0 = np.asarray(np.zeros((level2_hidden*(len(relations)+1),),
+                               dtype=theano.config.floatX))
+
+
+
+    for model1_name in level1_model_names:
+        for model2_name in level2_model_names:
+
+            # trick
+            #if model1_name == "scnn_model":
+            #    continue
+
+            print "%s-%s model test!"%(model1_name, model2_name)
+            run_model = models.Model(model1_name,
+                                     model2_name,
+                                     input_var,
+                                     level1_input,
+                                     level1_hidden,
+                                     level2_input,
+                                     level2_hidden,
+                                     n_output,
+                                     word_dim,
+                                     n_feature_maps,
+                                     window_sizes)
+            print "[Build model OK!]"
+
+            if model2_name == "tlstm_model":
+                get_model_y_fn = theano.function(inputs=[input_var,
+                                             run_model.sens_pos_var,
+                                             run_model.relation_pairs,
+                                             run_model.th,
+                                             run_model.tc,],
+                                     outputs=[run_model.y_drop_pred])
+                y_res = get_model_y_fn(sens,
+                                       sens_pos_ndarr,
+                                       relations,
+                                       th0,
+                                       tc0)
+                print y_res
+            else:
+                get_model_y_fn = theano.function(inputs=[input_var,
+                                             run_model.sens_pos_var,
+                                             run_model.relation_pairs,
+                                             run_model.th],
+                                                 outputs=[run_model.y_drop_pred])
+                y_res = get_model_y_fn(sens,
+                                       sens_pos_ndarr,
+                                       relations,
+                                       th0)
+                print y_res
+    return
+
+
 if __name__ == "__main__":
-    #test_srnn_trnn()
-    #test_sgru_tgru()
-    test_slstm_tlstm()
+    test_model()

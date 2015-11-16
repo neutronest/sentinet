@@ -601,7 +601,8 @@ if __name__ == "__main__":
     options, args = getopt.getopt(sys.argv[1:], "",
         ["help",
          "experiment=",
-         "model_name=",
+         "level1_model_name=",
+         "level2_model_name=",
          "dataset_name=",
          "log_path=",
          "word_dim=",
@@ -636,6 +637,13 @@ if __name__ == "__main__":
 
         elif opt == "--model_name":
             model_name = arg
+
+        elif opt == "--level1_model_name":
+            level1_model_name= arg
+
+        elif opt == "--level2_model_name":
+            level2_model_name= arg
+
 
         elif opt == "--dataset_name":
             print arg
@@ -755,6 +763,9 @@ if __name__ == "__main__":
     assert(level2_input != None)
     assert(level2_hidden != None)
     assert(level2_output != None)
+    assert(level1_model_name != None)
+    assert(level2_model_nameb != None)
+1
     logging.info("model description:")
     logging.info("=====================")
     logging.info("model type: srnn-trnn model")

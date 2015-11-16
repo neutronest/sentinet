@@ -10,7 +10,7 @@ class CNN(object):
 
     def __init__(self,
                 input_data,
-                rng,
+                 rng,
                 dim,
                 n_feature_maps,
                 window_sizes):
@@ -78,6 +78,62 @@ class CNN(object):
                                        n_steps=self.input_data.shape[0],
                                        outputs_info=None)
         #pdb.set_trace()
+        return
+
+class SCNN(object):
+    """ the CNN that apply sequence data """
+    def __init__(self,
+                 input_var,
+                 word_dim,
+                 n_feature_maps,
+                 window_sizes):
+        """
+
+        """
+        self.input_var = input_var
+        self.word_dim = word_dim
+        self.n_feature_maps = n_feature_maps
+        self.window_sizes = window_sizes
+        # params init
+        self.params = []
+        self.W_list = []
+        self.sens_pos_var = T.imatrix('sens_pos_var')
+        for ws in window_sizes:
+            # ws declare each window_size
+            W = utils.shared_uniform((self.n_feature_maps,
+                                      1,
+                                      ws,
+                                      self.word_dim),
+                                     dtype=theano.config.floatX,
+                                     name="cnn_"+str(ws))
+            self.W_list.append(W)
+            self.params.append(W)
+
+        self.b = utils.shared_zeros((self.n_feature_maps*len(self.window_sizes),),
+                                    dtype=theano.config.floatX)
+        self.params.append(self.b)
+        return
+
+    def _conv(self, sen_pos):
+
+        word_matrix = self.input_var[sen_pos[0]:sen_pos[1]]
+        #word_matrix = utils.get_var_with_mask(word_matrix, 0.)
+        word_tensor = word_matrix.dimshuffle('x', 'x', 0, 1)
+        h = None
+
+        for i in xrange(len(self.window_sizes)):
+            conv_out = conv.conv2d(input=word_tensor, filters=self.W_list[i])
+            max_out = T.max(conv_out, axis=2).flatten()
+            h = max_out if h == None else \
+                T.concatenate([h, max_out])
+        o = h + self.b
+        return o
+
+    def build_network(self):
+        output, _ = theano.scan(fn=self._conv,
+                                sequences=self.sens_pos_var,
+                                outputs_info=None)
+        self.h = output
         return
 
 class CNN_OneStep(object):

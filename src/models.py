@@ -4,8 +4,105 @@ import theano, theano.tensor as T
 import rnn
 import cnn
 import utils
+import layer
 
 
+class Model(object):
+    def __init__(self,
+                 level1_model_name,
+                 level2_model_name,
+                 input_var,
+                 level1_input,
+                 level1_hidden,
+                 level2_input,
+                 level2_hidden,
+                 n_output,
+                 word_dim=None,
+                 n_feature_maps=None,
+                 window_sizes=None,):
+
+        # variable init
+        self.level1_model_name = level1_model_name
+        self.level2_model_name = level2_model_name
+        self.input_var = input_var
+        self.level1_input = level1_input
+        self.level1_hidden = level1_hidden
+        self.level2_input = level2_input
+        self.level2_hidden = level2_hidden
+        self.n_output = n_output
+        self.word_dim = word_dim
+        self.n_feature_maps = n_feature_maps
+        self.window_sizes = window_sizes
+
+
+        if word_dim is not None:
+            self.word_dim = word_dim
+        if n_feature_maps is not None:
+            self.n_feature_maps = n_feature_maps
+        if window_sizes is not None:
+            self.window_sizes = window_sizes
+        self.smodel = None
+        self.tmodel = None
+
+        if self.level1_model_name == "srnn_model":
+            self.smodel = rnn.SRNN(input_var,
+                                   self.level1_input,
+                                   self.level1_hidden)
+        elif self.level1_model_name == "sgru_model":
+            self.smodel = rnn.SGRU(input_var,
+                                   self.level1_input,
+                                   self.level1_hidden)
+        elif self.level1_model_name == "slstm_model":
+            self.smodel = rnn.SLSTM(input_var,
+                                    self.level1_input,
+                                    self.level1_hidden)
+        elif self.level1_model_name == "scnn_model":
+            self.level2_input = len(self.window_sizes)*n_feature_maps
+            self.smodel = cnn.SCNN(self.input_var,
+                                   self.word_dim,
+                                   self.n_feature_maps,
+                                   self.window_sizes)
+        else:
+            print "smodel foobar 233333"
+        self.smodel.build_network()
+
+        if self.level2_model_name == "trnn_model":
+            self.tmodel = rnn.TRNN(self.smodel.h,
+                                   self.level2_input,
+                                   self.level2_hidden,
+                                   self.n_output)
+        elif self.level2_model_name == "tgru_model":
+            self.tmodel = rnn.TGRU(self.smodel.h,
+                                   self.level2_input,
+                                   self.level2_hidden,
+                                   self.n_output)
+        elif self.level2_model_name == "tlstm_model":
+            self.tmodel = rnn.TLSTM(self.smodel.h,
+                                    self.level2_input,
+                                    self.level2_hidden,
+                                    self.n_output)
+        else:
+            print "tmodel foorbar 23333"
+        self.tmodel.build_network()
+        self.output_layer = layer.OutputLayer(n_output,
+                                              self.tmodel.y,
+                                              "dropout")
+        self.sens_pos_var = self.smodel.sens_pos_var
+        self.relation_pairs = self.tmodel.relation_pairs
+        self.th = self.tmodel.th
+        if self.level2_model_name == "tlstm_model":
+            self.tc = self.tmodel.tc
+
+
+        self.y_pred = self.output_layer.y_pred
+        self.y_drop_pred = self.output_layer.y_drop_pred
+        self.output = self.output_layer.output
+        self.loss = self.output_layer.loss
+        self.error = self.output_layer.error
+        self.params = self.smodel.params + self.tmodel.params
+        return
+
+""" BELOW ALL ABANDON!"""
 class SRNN_TRNN(object):
     """
     the rnn-(tree rnn) model
@@ -15,60 +112,99 @@ class SRNN_TRNN(object):
     """
     def __init__(self,
                  input_var,
-                 srnn_input,
-                 srnn_hidden,
-                 srnn_output,
-                 trnn_input,
-                 trnn_hidden,
-                 trnn_output):
+                 level1_input,
+                 level1_hidden,
+                 level2_input,
+                 level2_hidden,
+                 n_output):
         """
         the RNN-TRNN model
-
         input_var: the input variable
             type: theano tensor of dvector
 
         """
 
         self.input_var = input_var
-        self.srnn_input = srnn_input
-        self.srnn_hidden = srnn_hidden
-        self.srnn_output = srnn_output # abandon
-        self.trnn_input = trnn_input
-        self.trnn_hidden = trnn_hidden
-        self.trnn_output = trnn_output
-
-        # trick
-        self.level2_hidden = trnn_hidden
+        self.level1_input = level1_input
+        self.level1_hidden = level1_hidden
+        self.level2_input = level2_input
+        self.level2_hidden = self.level2_hidden
+        self.n_output = n_output
 
         self.srnn_model = rnn.SRNN(self.input_var,
-                                   self.srnn_input,
-                                   self.srnn_hidden,
-                                   self.srnn_output)
+                                   self.level1_input,
+                                   self.level1_hidden)
         self.srnn_model.build_network()
 
-        self.trnn_model = rnn.TRNN(self.srnn_model.hidden_states_var,
-                                   self.trnn_input,
-                                   self.trnn_hidden,
-                                   self.trnn_output)
+        self.trnn_model = rnn.TRNN(self.srnn_model.h,
+                                   self.level2_input,
+                                   self.level2_hidden)
         self.trnn_model.build_network()
 
         self.sens_pos_var = self.srnn_model.sens_pos_var
         self.relation_pairs = self.trnn_model.relation_pairs
         self.th = self.trnn_model.th
-        self.y_pred = self.trnn_model.y_pred
-        self.output = self.trnn_model.output
-        self.loss = self.trnn_model.loss
-        self.error = self.trnn_model.error
-        self.params = [self.srnn_model.W_input,
-                       self.srnn_model.W_hidden,
-                       self.srnn_model.b_h,
-                       self.srnn_model.h0,
-                       self.trnn_model.TW_input,
-                       self.trnn_model.TW_hidden,
-                       self.trnn_model.TW_output,
-                       self.trnn_model.tb_h,
-                       self.trnn_model.tb_y]
+
+        self.output_layer = layer.OutputLayer(level2_hidden,
+                                               n_output,
+                                               self.trnn_model.h,
+                                               "uniform",
+                                               "dropout")
+        self.y_pred = self.output_layer.y_pred
+        self.y_drop_pred = self.output_layer.y_drop_pred
+        self.output = self.output_layer.output
+        self.loss = self.output_layer.loss
+        self.error = self.output_layer.error
+        self.params = self.srnn_model.params + \
+                      self.trnn_model.params + \
+                      self.output_layer.params
         return
+
+class SCNN_TRNN(object):
+    """
+
+    """
+    def __init__(self,
+                 input_var,
+                 word_dim,
+                 n_feature_maps,
+                 window_sizes,
+                 level2_input,
+                 level2_hidden,
+                 n_output):
+
+        self.input_var = input_var
+        self.word_dim = word_dim
+        self.n_feature_maps = n_feature_maps
+        self.window_sizes = window_sizes
+        self.level2_input = level2_input
+        self.level2_hidden = level2_hidden
+        self.n_output = n_output
+
+        self.scnn_model = cnn.SCNN(self.input_var,
+                                   self.word_dim,
+                                   self.n_feature_maps,
+                                   self.window_sizes)
+        self.scnn_model.build_network()
+        self.trnn_model = rnn.TRNN(self.scnn_model.output,
+                                   self.level2_input,
+                                   self.level2_hidden)
+        self.trnn_model.build_network()
+        self.output_layer = layer.OutputLayer(level2_hidden,
+                                               n_output,
+                                               self.trnn_model.h,
+                                               "uniform",
+                                               "dropout")
+        self.y_pred = self.output_layer.y_pred
+        self.y_drop_pred = self.output_layer.y_drop_pred
+        self.output = self.output_layer.output
+        self.loss = self.output_layer.loss
+        self.error = self.output_layer.error
+        self.params = self.scnn_model.params + \
+                      self.trnn_model.params + \
+                      self.output_layer.params
+        return
+
 
 class SGRU_TGRU(object):
     """
@@ -76,46 +212,47 @@ class SGRU_TGRU(object):
     """
     def __init__(self,
                  input_var,
-                 sgru_input,
-                 sgru_hidden,
-                 sgru_output,
-                 tgru_input,
-                 tgru_hidden,
-                 tgru_output):
+                 level1_input,
+                 level1_hidden,
+                 level2_input,
+                 level2_hidden,
+                 n_output):
         """
         the SGRU-TGRU init
 
         """
         self.input_var = input_var
-        self.sgru_input = sgru_input
-        self.sgru_hidden = sgru_hidden
-        self.sgru_output = sgru_output
-        self.tgru_input = tgru_input
-        self.tgru_hidden = tgru_hidden
-        self.tgru_output = tgru_output
-
-        # trick
-        self.level2_hidden = tgru_hidden
+        self.level1_input = level1_input
+        self.level1_hidden = level1_hidden
+        self.level2_input = level2_input
+        self.level2_hidden = level2_hidden
 
         self.sgru_model = rnn.SGRU(self.input_var,
-                                   self.sgru_input,
-                                   self.sgru_hidden,
-                                   self.sgru_output)
+                                   self.level1_input,
+                                   self.level1_hidden)
         self.sgru_model.build_network()
 
         self.tgru_model = rnn.TGRU(self.sgru_model.hidden_states_var,
-                                   self.tgru_input,
-                                   self.tgru_hidden,
-                                   self.tgru_output)
+                                   self.level2_input,
+                                   self.level2_hidden)
         self.tgru_model.build_network()
         self.sens_pos_var = self.sgru_model.sens_pos_var
         self.relation_pairs = self.tgru_model.relation_pairs
         self.th = self.tgru_model.th
-        self.y_pred = self.tgru_model.y_pred
-        self.output = self.tgru_model.output
-        self.loss = self.tgru_model.loss
-        self.error = self.tgru_model.error
-        self.params = self.sgru_model.params + self.tgru_model.params
+
+        self.output_layer = layer.OutputLayer(level2_hidden,
+                                               n_output,
+                                               self.tgru_model.h,
+                                               "uniform",
+                                               "dropout")
+        self.y_pred = self.output_layer.y_pred
+        self.y_drop_pred = self.output_layer.y_drop_pred
+        self.output = self.output_layer.output
+        self.loss = self.output_layer.loss
+        self.error = self.output_layer.error
+        self.params = self.sgru_model.params + \
+                      self.tgru_model.params + \
+                      self.output_layer.params
         return
 
 class SLSTM_TLSTM(object):
@@ -125,43 +262,50 @@ class SLSTM_TLSTM(object):
                  input_var,
                  level1_input,
                  level1_hidden,
-                 level1_output,
                  level2_input,
                  level2_hidden,
-                 level2_output):
+                 n_output):
         """
         The SLSTM-TLSTM init
         """
         self.input_var = input_var
         self.level1_input = level1_input
         self.level1_hidden = level1_hidden
-        self.level1_output = level1_output
         self.level2_input = level2_input
         self.level2_hidden = level2_hidden
-        self.level2_output = level2_output
+        self.n_output = n_output
 
         self.slstm_model = rnn.SLSTM(self.input_var,
                                      self.level1_input,
-                                     self.level1_hidden,
-                                     self.level1_output)
+                                     self.level1_hidden)
         self.slstm_model.build_network()
 
-        self.tlstm_model = rnn.TLSTM(self.slstm_model.hidden_states_var,
+        self.tlstm_model = rnn.TLSTM(self.slstm_model.h,
                                      self.level2_input,
                                      self.level2_hidden,
-                                     self.level2_output)
+                                     self.n_output)
         self.tlstm_model.build_network()
         self.sens_pos_var = self.slstm_model.sens_pos_var
         self.relation_pairs = self.tlstm_model.relation_pairs
         self.th = self.tlstm_model.th
         self.tc = self.tlstm_model.tc
-        self.y_pred = self.tlstm_model.y_pred
-        self.output = self.tlstm_model.output
-        self.loss = self.tlstm_model.loss
-        self.error = self.tlstm_model.error
-        self.params = self.slstm_model.params + self.tlstm_model.params
+
+        self.output_layer = layer.OutputLayer(self.level2_hidden,
+                                               self.n_output,
+                                               self.tlstm_model.h,
+                                               "uniform",
+                                               "dropout")
+        self.y_pred = self.output_layer.y_pred
+        self.y_drop_pred = self.output_layer.y_drop_pred
+        self.output = self.output_layer.output
+        self.loss = self.output_layer.loss
+        self.error = self.output_layer.error
+        self.params = self.slstm_model.params + \
+                      self.tlstm_model.params + \
+                      self.output_layer.params
         return
-        return
+
+
 
 
 class RCNN_OneStep(object):

@@ -18,14 +18,12 @@ class SRNN(object):
     def __init__(self,
                  input_var,
                  n_input,
-                 n_hidden,
-                 n_output):
+                 n_hidden):
 
         self.input_var = input_var
         self.sens_pos_var = T.imatrix('sens_pos_var')
         self.n_input = n_input
         self.n_hidden = n_hidden
-        self.n_output = n_output
 
                 # weight define
         self.W_input = utils.shared_uniform((n_input, n_hidden),
@@ -34,25 +32,19 @@ class SRNN(object):
         self.W_hidden = utils.shared_uniform((n_hidden, n_hidden),
                                              dtype=theano.config.floatX,
                                              name='W_hidden')
-        self.W_output = utils.shared_uniform((n_hidden, n_output),
-                                             dtype=theano.config.floatX,
-                                             name='W_output')
+
 
         self.b_h = utils.shared_zeros((n_hidden,),
                                       dtype=theano.config.floatX,
                                       name='bh')
-        self.b_y = utils.shared_zeros((n_output,),
-                                      dtype=theano.config.floatX)
+
         self.h0 = utils.shared_zeros((n_hidden,),
                                      dtype=theano.config.floatX,
-
                                      name='h0')
 
         self.params = [self.W_input,
                        self.W_hidden,
-                       self.W_output,
                        self.b_h,
-                       self.b_y,
                        self.h0]
         return
 
@@ -62,19 +54,19 @@ class SRNN(object):
         h_t = T.nnet.sigmoid(T.dot(x_t, self.W_input) + \
                              T.dot(h_pre, self.W_hidden) + \
                              self.b_h)
-        y_t = T.dot(h_t, self.W_output) + self.b_y
-        return [h_t, y_t]
+        return h_t
 
     def _get_hidden_state(self, sen_pos):
         words_var = self.input_var[sen_pos[0]:sen_pos[1]]
-        [h, y], _ = theano.scan(fn=self._recurrent,
+        h, _ = theano.scan(fn=self._recurrent,
                                 sequences=words_var,
                                 n_steps=words_var.shape[0],
-                                outputs_info=[self.h0, None])
+                                outputs_info=self.h0)
         # return the last hidden as the sentence representation
         return h[-1]
 
     def build_network(self):
+
         self.h, _ = theano.scan(fn=self._get_hidden_state,
                                 sequences=self.sens_pos_var,
                                 outputs_info=None)
@@ -112,13 +104,12 @@ class TRNN(object):
         self.TW_output = utils.shared_uniform((n_hidden, n_output),
                                               dtype=theano.config.floatX,
                                               name='TW_output')
-
         self.tb_h = utils.shared_zeros((n_hidden,),
                                       dtype=theano.config.floatX,
                                       name='tbh')
         self.tb_y = utils.shared_zeros((n_output,),
-                                      dtype=theano.config.floatX,
-                                      name='tby')
+                                       dtype=theano.config.floatX,
+                                       name='tby')
 
         self.th = T.dvector('th')
         self.params = [self.TW_input,
@@ -147,26 +138,18 @@ class TRNN(object):
                              T.dot(hlist_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden], self.TW_hidden) + \
                              self.tb_h)
         h_next = T.set_subtensor(hlist_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
-
+        y = T.dot(h_t, self.TW_output) + self.tb_y
         #hlist_next = T.concatenate([hlist_tm1, h_t.dimshuffle('x', 0)])
-
-        y_t = T.dot(h_t, self.TW_output) + self.tb_y
-        return h_next, y_t
+        return h_next, y
 
     def build_network(self):
         [self.h, self.y], _ = theano.scan(fn=self._recurrent,
                                           sequences=self.relation_pairs,
                                           outputs_info=[self.th, None])
-
-        self.y_pred = T.nnet.softmax(self.y)
-        self.output = T.argmax(self.y_pred, axis=1)
-        self.loss = loss.binary_crossentropy
-        self.error = loss.mean_classify_error
         return
 
 """
 ==================== END TRNN ==============
-
 ==================== BEGIN GRU =============
 
 """
@@ -176,13 +159,11 @@ class SGRU(object):
     def __init__(self,
                  input_var,
                  n_input,
-                 n_hidden,
-                 n_output):
+                 n_hidden):
         self.input_var = input_var
         self.sens_pos_var = T.imatrix('sens_pos_var')
         self.n_input = n_input
         self.n_hidden = n_hidden
-        self.n_output = n_output
 
         # weight define
         self.W_z = utils.shared_uniform((n_input, n_hidden),
@@ -253,10 +234,9 @@ class SGRU(object):
 
     def build_network(self):
 
-        h, _ = theano.scan(fn=self._get_h,
+        self.h, _ = theano.scan(fn=self._get_h,
                            sequences=self.sens_pos_var,
                            outputs_info=None)
-        self.hidden_states_var = h
         return
 
 """ ================== END SGRU ==================
@@ -275,7 +255,6 @@ class TGRU(object):
         self.input_var = input_var
         self.n_input = n_input
         self.n_hidden = n_hidden
-        self.n_output = n_output
         self.relation_pairs = T.imatrix('relation_pairs')
         self.th = T.dvector('th')
 
@@ -308,9 +287,9 @@ class TGRU(object):
         self.b_h = utils.shared_zeros((n_hidden,),
                                         dtype=theano.config.floatX,
                                         name='TGRU_b_h')
-        self.W_output = utils.shared_uniform((n_hidden, n_output),
-                                             dtype=theano.config.floatX,
-                                             name="TGRU_W_output")
+        self.TW_output = utils.shared_uniform((n_hidden, n_output),
+                                              dtype=theano.config.floatX,
+                                              name='TGRU_W_output')
         self.b_y = utils.shared_zeros((n_output,),
                                       dtype=theano.config.floatX,
                                       name='TGRU_b_y')
@@ -324,7 +303,7 @@ class TGRU(object):
                        self.W_h,
                        self.U_h,
                        self.b_h,
-                       self.W_output,
+                       self.TW_output,
                        self.b_y]
         return
 
@@ -350,16 +329,12 @@ class TGRU(object):
                      self.b_h)
         h_t = (1 - z_t) * h_p + z_t * h_c
         h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
-        y_t = T.dot(h_t, self.W_output) + self.b_y
+        y_t = T.dot(h_t, self.TW_output) + self.b_y
         return h_next, y_t
     def build_network(self):
         [self.h, self.y], _ = theano.scan(fn=self._recurrent,
                                           sequences=self.relation_pairs,
                                           outputs_info=[self.th, None])
-        self.y_pred = T.nnet.softmax(self.y)
-        self.output = T.argmax(self.y_pred, axis=1)
-        self.loss = loss.nll_multiclass
-        self.error = loss.mean_classify_error
         return
 
 """
@@ -374,13 +349,11 @@ class SLSTM(object):
     def __init__(self,
                  input_var,
                  n_input,
-                 n_hidden,
-                 n_output):
+                 n_hidden):
         self.input_var = input_var
         self.sens_pos_var = T.imatrix('sens_pos_var')
         self.n_input = n_input
         self.n_hidden = n_hidden
-        self.n_output = n_output
 
         self.W_i = utils.shared_orthogonal((n_input, n_hidden),
                                            scale=1.,
@@ -473,10 +446,9 @@ class SLSTM(object):
     def build_network(self):
         """
         """
-        h, _ = theano.scan(fn=self._get_h,
+        self.h, _ = theano.scan(fn=self._get_h,
                            sequences=self.sens_pos_var,
                            outputs_info=None)
-        self.hidden_states_var = h
         return
 
 class TLSTM(object):
@@ -491,7 +463,6 @@ class TLSTM(object):
         self.input_var = input_var
         self.n_input = n_input
         self.n_hidden = n_hidden
-        self.n_output = n_output
         self.relation_pairs = T.imatrix('relation_pairs')
         self.th = T.dvector('th')
         self.tc = T.dvector('tc')
@@ -544,9 +515,10 @@ class TLSTM(object):
                                       dtype=theano.config.floatX,
                                       name='TLSTM_b_o')
 
-        self.W_output = utils.shared_orthogonal((n_hidden, n_output),
-                                                dtype=theano.config.floatX,
-                                                name='TLSTM_W_outupt')
+
+        self.TW_output = utils.shared_uniform((n_hidden, n_output),
+                                              dtype=theano.config.floatX,
+                                              name='TLSTM_W_output')
         self.b_y = utils.shared_zeros((n_output,),
                                       dtype=theano.config.floatX,
                                       name='TLSTM_b_y')
@@ -555,7 +527,7 @@ class TLSTM(object):
                        self.W_f, self.U_f, self.b_f,
                        self.W_c, self.U_c, self.U_c,
                        self.W_o, self.U_o, self.b_o,
-                       self.W_output, self.b_y]
+                       self.TW_output, self.b_y]
 
         return
 
@@ -586,17 +558,13 @@ class TLSTM(object):
 
         h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
         c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
-        y_t = T.dot(h_t, self.W_output) + self.b_y
+        y_t = T.dot(h_t, self.TW_output) + self.b_y
         return h_next, c_next, y_t
 
     def build_network(self):
         [self.h, self.c, self.y], _ = theano.scan(fn=self._recurrent,
                                                   sequences=self.relation_pairs,
                                                   outputs_info=[self.th, self.tc, None])
-        self.y_pred = T.nnet.softmax(self.y)
-        self.output = T.argmax(self.y_pred, axis=1)
-        self.loss = loss.nll_multiclass
-        self.error = loss.mean_classify_error
         return
 
 class RNN_OneStep(object):
