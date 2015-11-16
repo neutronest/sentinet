@@ -116,8 +116,7 @@ class TRNN(object):
                        self.TW_hidden,
                        self.TW_output,
                        self.tb_h,
-                       self.tb_y,
-                       self.th]
+                       self.tb_y]
         return
 
     def _recurrent(self, relation_pair, hlist_tm1):
