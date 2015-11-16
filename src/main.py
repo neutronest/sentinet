@@ -25,7 +25,6 @@ def train_process(model_name,
                   th_init=None,
                   tc_init=None,
                   d=None):
-    pdb.set_trace()
     if model_name == "srnn_trnn_model" or \
        model_name == "sgru_tgru_model":
 
