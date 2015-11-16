@@ -454,11 +454,11 @@ if __name__ == "__main__":
         load_data = data_process.load_utterance_dataset(train_pos, valid_pos)
         # need dataset description
         # TODO: other dataset
-        x_var = T.dtensor3('x_var')
+        x_var = T.ftensor3('x_var')
     elif dataset_name == "microblog":
         logging.info("loading microblog data now!")
         load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos)
-        x_var = T.matrix('x_var')
+        x_var = T.fmatrix('x_var')
 
 
     """
