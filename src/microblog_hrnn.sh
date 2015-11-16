@@ -8,7 +8,6 @@ cmd="python main.py
     --word_dim=200
     --level1_input=200
     --level1_hidden=200
-    --level1_output=3
     --level2_input=200
     --level2_hidden=200
     --n_output=3

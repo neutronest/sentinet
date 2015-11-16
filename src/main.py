@@ -467,7 +467,6 @@ if __name__ == "__main__":
     assert(word_dim != None)
     assert(level1_input != None)
     assert(level1_hidden != None)
-    assert(level1_output != None)
     assert(level2_input != None)
     assert(level2_hidden != None)
     assert(n_output != None)
