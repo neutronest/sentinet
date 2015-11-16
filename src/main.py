@@ -25,6 +25,7 @@ def train_process(model_name,
                   th_init=None,
                   tc_init=None,
                   d=None):
+    pdb.set_trace()
     if model_name == "srnn_trnn_model" or \
        model_name == "sgru_tgru_model":
 
@@ -51,7 +52,7 @@ def train_process(model_name,
                                   relation_tree,
                                   th_init,
                                   tc_init)
-        return (g, train_loss, y)
+    return (g, train_loss, y)
 
 def check_compute(model_name,
                   loss_fn,
@@ -273,6 +274,7 @@ def run_microblog_experimentV2(load_data,
                                               dtype=theano.config.floatX))
                 tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
                                               dtype=theano.config.floatX))
+
 
                 (g, train_loss, y) = train_process(model_name,
                                                    compute_gparams_fn,
