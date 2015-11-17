@@ -80,7 +80,8 @@ def shared_orthogonal(shape,
     # pick the one with the correct shape
     q = u if u.shape == flat_shape else v
     q = q.reshape(shape)
-    return sharedX(scale * q[:shape[0], :shape[1]])
+    return sharedX(scale * q[:shape[0], :shape[1]],
+                   name=name)
 def get_mask(x, mask_value):
     """
     return the crossponding Mask Matrix with input x

@@ -193,8 +193,7 @@ class SGRU(object):
                        self.b_r,
                        self.W_h,
                        self.U_h,
-                       self.b_h,
-                       self.h0
+                       self.b_h
                        ]
 
         return
@@ -414,7 +413,7 @@ class SLSTM(object):
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_tm1, self.U_o) + \
                              self.b_o)
-        h_mt = o_t * T.tanh(c_t)
+        h_mt = o_t * T.tanh(c_mt)
 
         h_t = m_t[:, None] * h_mt + (1 - m_t)[:, None] * h_tm1
         c_t = m_t[:, None] * c_mt + (1 - m_t)[:, None] * c_tm1

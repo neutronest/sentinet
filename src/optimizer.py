@@ -64,7 +64,8 @@ class SGD(OPTIMIZER):
         """
         for param, gparam in zip(params, self.gparams_acc):
             weight_update = self.delta_pre[param].get_value()
-            ugd = self.momentum * weight_update - gparam * self.learning_rate / self.n_acc
+            temp = np.ones_like(gparam) * self.learning_rate / self.n_acc
+            ugd = self.momentum * weight_update - gparam * temp
             #self.updates[weight_update] = ugd
             #self.updates[param] = param + ugd
             param.set_value(param.get_value() + ugd)

@@ -27,41 +27,23 @@ def train_process(model_name,
                   th_init=None,
                   tc_init=None,
                   d=None):
-    if model_name == "srnn_trnn_model" or \
-       model_name == "sgru_tgru_model":
 
-        g = gparams_fn(data_x,
-                       data_y,
-                       mask,
-                       h0,
-                       c0,
-                       relation_tree,
-                       th_init,
-                       tc_init)
-        [train_loss, y] = loss_fn(data_x,
-                                  data_y,
-                                  mask,
-                                  h0,
-                                  c0,
-                                  relation_tree,
-                                  th_init,
-                                  tc_init)
-    if model_name == "slstm_tlstm_model":
-        g = gparams_fn(data_x,
-                       data_y,
-                       h0,
-                       c0,
-                       relation_tree,
-                       th_init,
-                       tc_init)
-        [train_loss, y] = loss_fn(data_x,
-                                  data_y,
-                                  h0,
-                                  c0,
-                                  relation_tree,
-                                  th_init,
-                                  tc_init)
-        print train_loss
+    g = gparams_fn(data_x,
+                   data_y,
+                   mask,
+                   h0,
+                   c0,
+                   relation_tree,
+                   th_init,
+                   tc_init)
+    [train_loss, y] = loss_fn(data_x,
+                              data_y,
+                              mask,
+                              h0,
+                              c0,
+                              relation_tree,
+                              th_init,
+                              tc_init)
     return (g, train_loss, y)
 
 def check_compute(model_name,
@@ -78,38 +60,23 @@ def check_compute(model_name,
                   tc_init=None,
                   d=None):
 
-    if model_name == "srnn_trnn_model" or \
-       model_name == "sgru_tgru_model":
-        [check_loss, check_output] = loss_fn(data_x,
-                                             data_y,
-                                             mask,
-                                             h0,
-                                             c0,
-                                             relation_tree,
-                                             th_init,
-                                             tc_init)
-        [check_error, check_output] = error_fn(data_x,
-                                               label_y,
-                                               mask,
-                                               h0,
-                                               c0,
-                                               relation_tree,
-                                               th_init,
-                                               tc_init)
-    if model_name == "slstm_tlstm_model":
-        [check_loss, check_output] = loss_fn(data_x,
-                                             data_y,
-                                             h0,
-                                             c0,
-                                             th_init,
-                                             tc_init)
-        [check_error, check_output] = error_fn(data_x,
-                                               label_y,
-                                               h0,
-                                               c0,
-                                               relation_tree,
-                                               th_init,
-                                               tc_init)
+    [check_loss, check_output] = loss_fn(data_x,
+                                         data_y,
+                                         mask,
+                                         h0,
+                                         c0,
+                                         relation_tree,
+                                         th_init,
+                                         tc_init)
+    [check_error, check_output] = error_fn(data_x,
+                                           label_y,
+                                           mask,
+                                           h0,
+                                           c0,
+                                           relation_tree,
+                                           th_init,
+                                           tc_init)
+
     return (check_loss, check_error, check_output)
 
 
@@ -286,53 +253,7 @@ def run_microblog_experimentV2(load_data,
                                                outputs=[error_var,
                                                         model.output],
                                            on_unused_input='ignore')
-        """
-        if model_name == "slstm_tlstm_model":
 
-            compute_gparams_fn = theano.function(inputs=[model.input_var,
-                                                         y_true_var,
-                                                         model.mask,
-                                                         model.h0,
-                                                         model.c0,
-                                                         model.relation_pairs,
-                                                         model.th,
-                                                         model.tc],
-                                                 outputs=gparams_var_list)
-
-            train_loss_fn = theano.function(inputs=[model.input_var,
-                                                    y_true_var,
-                                                    model.mask,
-                                                    model.h0,
-                                                    model.c0,
-                                                    model.relation_pairs,
-                                                    model.th,
-                                                    model.tc],
-                                            outputs=[cost_train_var,
-                                                     model.y_pred])
-
-            compute_loss_fn = theano.function(inputs=[model.input_var,
-                                                      y_true_var,
-                                                      model.mask,
-                                                      model.h0,
-                                                      model.c0,
-                                                      model.relation_pairs,
-                                                      model.th,
-                                                      model.tc],
-                                              outputs=[cost_var,
-                                                       model.y_pred])
-
-            compute_error_fn = theano.function(inputs=[model.input_var,
-                                                       y_label_var,
-                                                       model.mask,
-                                                       model.h0,
-                                                       model.c0,
-                                                       model.relation_pairs,
-                                                       model.th,
-                                                       model.tc],
-                                               outputs=[error_var,
-                                                        model.output])
-
-        """
         epoch = 0
         seq_idx = 0
         valid_idx = 0
