@@ -107,7 +107,7 @@ class ADADELTA(OPTIMIZER):
     def params_update(self, params):
         for param, gparam in zip(params, self.gparams_acc):
             self.acc_grad[param] = self.decay * self.acc_grad[param] + \
-                                   (1 - self.decay) * gparam * gparam
+                                   (1 - self.decay) * np.ones_like(gparam) * gparam * gparam
 
             temp = np.ones_like(gparam) * self.learning_rate
             ugd = np.sqrt(self.acc_update[param] + self.epsilon) / \
