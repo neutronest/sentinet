@@ -20,7 +20,9 @@ def train_process(model_name,
                   loss_fn,
                   data_x,
                   data_y,
-                  sens_pos,
+                  mask,
+                  h0,
+                  c0,
                   relation_tree,
                   th_init=None,
                   tc_init=None,
@@ -30,27 +32,36 @@ def train_process(model_name,
 
         g = gparams_fn(data_x,
                        data_y,
-                       sens_pos,
-                       relation_tree,
-                       th_init)
-        [train_loss, y] = loss_fn(data_x,
-                                  data_y,
-                                  sens_pos,
-                                  relation_tree,
-                                  th_init)
-    if model_name == "slstm_tlstm_model":
-        g = gparams_fn(data_x,
-                       data_y,
-                       sens_pos,
+                       mask,
+                       h0,
+                       c0,
                        relation_tree,
                        th_init,
                        tc_init)
         [train_loss, y] = loss_fn(data_x,
                                   data_y,
-                                  sens_pos,
+                                  mask,
+                                  h0,
+                                  c0,
                                   relation_tree,
                                   th_init,
                                   tc_init)
+    if model_name == "slstm_tlstm_model":
+        g = gparams_fn(data_x,
+                       data_y,
+                       h0,
+                       c0,
+                       relation_tree,
+                       th_init,
+                       tc_init)
+        [train_loss, y] = loss_fn(data_x,
+                                  data_y,
+                                  h0,
+                                  c0,
+                                  relation_tree,
+                                  th_init,
+                                  tc_init)
+        print train_loss
     return (g, train_loss, y)
 
 def check_compute(model_name,
@@ -59,7 +70,9 @@ def check_compute(model_name,
                   data_x,
                   data_y,
                   label_y,
-                  sens_pos,
+                  mask,
+                  h0,
+                  c0,
                   relation_tree,
                   th_init=None,
                   tc_init=None,
@@ -69,24 +82,31 @@ def check_compute(model_name,
        model_name == "sgru_tgru_model":
         [check_loss, check_output] = loss_fn(data_x,
                                              data_y,
-                                             sens_pos,
-                                             relation_tree,
-                                             th_init)
-        [check_error, check_output] = error_fn(data_x,
-                                               label_y,
-                                               sens_pos,
-                                               relation_tree,
-                                               th_init)
-    if model_name == "slstm_tlstm_model":
-        [check_loss, check_output] = loss_fn(data_x,
-                                             data_y,
-                                             sens_pos,
+                                             mask,
+                                             h0,
+                                             c0,
                                              relation_tree,
                                              th_init,
                                              tc_init)
         [check_error, check_output] = error_fn(data_x,
                                                label_y,
-                                               sens_pos,
+                                               mask,
+                                               h0,
+                                               c0,
+                                               relation_tree,
+                                               th_init,
+                                               tc_init)
+    if model_name == "slstm_tlstm_model":
+        [check_loss, check_output] = loss_fn(data_x,
+                                             data_y,
+                                             h0,
+                                             c0,
+                                             th_init,
+                                             tc_init)
+        [check_error, check_output] = error_fn(data_x,
+                                               label_y,
+                                               h0,
+                                               c0,
                                                relation_tree,
                                                th_init,
                                                tc_init)
@@ -99,6 +119,7 @@ def check_process(check_idx,
                   data_y,
                   loss_fn,
                   error_fn,
+                  lookup_table,
                   process_type="valid"):
     """ valid or test process
     """
@@ -113,16 +134,32 @@ def check_process(check_idx,
     for(check_threadid_x, check_item_x), (check_threadid_y, check_item_y) in \
        zip(data_x.items(), data_y.items()):
         assert(check_threadid_x == check_threadid_y)
-        input_x = np.asarray(check_item_x[0],
-                                   dtype=theano.config.floatX)
+
+        ids_matrix = np.asarray(check_item_x[0],
+                                dtype=theano.config.floatX)
+        input_x = []
+        for ids in ids_matrix:
+            input_x.append([])
+            for word_id in ids:
+                input_x[-1].append(lookup_table[int(word_id)])
+        input_x = np.transpose(np.asarray(input_x,
+                                          dtype=theano.config.floatX),
+                               axes=(1,0,2))
+        mask = np.transpose(np.asarray(train_item_x[2],
+                                       dtype=theano.config.floatX),
+                            axes=(1,0,2))
         input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in check_item_y],
-                                   dtype=np.int32)
+                             dtype=np.int32)
         label_y = np.asarray(check_item_y,
                              dtype=np.int32)
-        sens_pos = np.asarray(check_item_x[1],
-                              dtype=np.int32)
-        relation_tree = np.asarray(check_item_x[2],
+
+        relation_tree = np.asarray(check_item_x[3],
                                    dtype=np.int32)
+
+        h0 = np.asarray(np.zeros((len(relation_tree), model.level1_hidden),
+                                 dtype=theano.config.floatX))
+        c0 = np.asarray(np.zeros((len(relation_tree), model.level1_hidden),
+                                 dtype=theano.config.floatX))
         th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
                                       dtype=theano.config.floatX))
         tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
@@ -134,7 +171,9 @@ def check_process(check_idx,
                                                                 input_x,
                                                                 input_y,
                                                                 label_y,
-                                                                sens_pos,
+                                                                mask,
+                                                                h0,
+                                                                c0,
                                                                 relation_tree,
                                                                 th_init,
                                                                 tc_init)
@@ -166,6 +205,8 @@ def run_microblog_experimentV2(load_data,
     """
     # prepare data
     (train_x, train_y, valid_x, valid_y, test_x, test_y) = load_data
+    words_table, lookup_table, wordid_acc = data_process.build_lookuptable()
+
 
     n_train = len(train_x)
     n_valid = len(valid_x)
@@ -182,6 +223,7 @@ def run_microblog_experimentV2(load_data,
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
         y_label_var = T.ivector('y_label_var')
+        cost_train_var = model.loss(y_true_var, model.y_drop_pred)
         cost_var = model.loss(y_true_var, model.y_pred)
         error_var = model.error(y_label_var, model.output)
 
@@ -196,53 +238,101 @@ def run_microblog_experimentV2(load_data,
             opt = optimizer.ADADELTA(model.params)
 
         gparams_var_list = T.grad(cost_var, model.params)
-        if model_name == "srnn_trnn_model" or \
-           model_name == "sgru_tgru_model":
 
-            compute_gparams_fn = theano.function(inputs=[model.input_var,
-                                                         y_true_var,
-                                                         model.sens_pos_var,
-                                                         model.relation_pairs,
-                                                         model.th],
-                                                 outputs=gparams_var_list)
-            compute_loss_fn = theano.function(inputs=[model.input_var,
+
+        compute_gparams_fn = theano.function(inputs=[model.input_var,
+                                                     y_true_var,
+                                                     model.mask,
+                                                     model.h0,
+                                                     model.c0,
+                                                     model.relation_pairs,
+                                                     model.th,
+                                                     model.tc],
+                                             outputs=gparams_var_list,
+                                             on_unused_input='ignore')
+
+        train_loss_fn = theano.function(inputs=[model.input_var,
+                                                    y_true_var,
+                                                    model.mask,
+                                                    model.h0,
+                                                    model.c0,
+                                                    model.relation_pairs,
+                                                    model.th,
+                                                    model.tc],
+                                        outputs=[cost_train_var,
+                                                 model.y_pred],
+                                        on_unused_input='ignore')
+
+        compute_loss_fn = theano.function(inputs=[model.input_var,
                                                       y_true_var,
-                                                      model.sens_pos_var,
+                                                      model.mask,
+                                                      model.h0,
+                                                      model.c0,
                                                       model.relation_pairs,
-                                                      model.th],
-                                              outputs=[cost_var, model.y_pred])
+                                                      model.th,
+                                                      model.tc],
+                                              outputs=[cost_var,
+                                                       model.y_pred],
+                                          on_unused_input='ignore')
 
-            compute_error_fn = theano.function(inputs=[model.input_var,
+        compute_error_fn = theano.function(inputs=[model.input_var,
                                                        y_label_var,
-                                                       model.sens_pos_var,
+                                                       model.mask,
+                                                       model.h0,
+                                                       model.c0,
                                                        model.relation_pairs,
-                                                       model.th],
-                                               outputs=[error_var, model.output])
+                                                       model.th,
+                                                       model.tc],
+                                               outputs=[error_var,
+                                                        model.output],
+                                           on_unused_input='ignore')
+        """
         if model_name == "slstm_tlstm_model":
 
             compute_gparams_fn = theano.function(inputs=[model.input_var,
                                                          y_true_var,
-                                                         model.sens_pos_var,
+                                                         model.mask,
+                                                         model.h0,
+                                                         model.c0,
                                                          model.relation_pairs,
                                                          model.th,
                                                          model.tc],
                                                  outputs=gparams_var_list)
+
+            train_loss_fn = theano.function(inputs=[model.input_var,
+                                                    y_true_var,
+                                                    model.mask,
+                                                    model.h0,
+                                                    model.c0,
+                                                    model.relation_pairs,
+                                                    model.th,
+                                                    model.tc],
+                                            outputs=[cost_train_var,
+                                                     model.y_pred])
+
             compute_loss_fn = theano.function(inputs=[model.input_var,
                                                       y_true_var,
-                                                      model.sens_pos_var,
+                                                      model.mask,
+                                                      model.h0,
+                                                      model.c0,
                                                       model.relation_pairs,
                                                       model.th,
                                                       model.tc],
-                                              outputs=[cost_var, model.y_pred])
+                                              outputs=[cost_var,
+                                                       model.y_pred])
 
             compute_error_fn = theano.function(inputs=[model.input_var,
                                                        y_label_var,
-                                                       model.sens_pos_var,
+                                                       model.mask,
+                                                       model.h0,
+                                                       model.c0,
                                                        model.relation_pairs,
                                                        model.th,
                                                        model.tc],
-                                               outputs=[error_var, model.output])
+                                               outputs=[error_var,
+                                                        model.output])
 
+        """
         epoch = 0
         seq_idx = 0
         valid_idx = 0
@@ -260,27 +350,39 @@ def run_microblog_experimentV2(load_data,
                 zip(train_x.items(), train_y.items()):
                 assert(train_threadid_x == train_threadid_y)
                 # prepare train data
-                train_input_x = np.asarray(train_item_x[0],
-                                           dtype=theano.config.floatX)
-                train_input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
+                ids_matrix = np.asarray(train_item_x[0],
+                                        dtype=theano.config.floatX)
+                input_x = []
+                for ids in ids_matrix:
+                    input_x.append([])
+                    for word_id in ids:
+                        input_x[-1].append(lookup_table[int(word_id)])
+                input_x = np.transpose(np.asarray(input_x,
+                                                  dtype=theano.config.floatX),
+                                       axes=(1,0,2))
+                mask = np.transpose(np.asarray(train_item_x[2],
+                                               dtype=theano.config.floatX))
+                input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
                                            dtype=np.int32)
-                sens_pos = np.asarray(train_item_x[1],
-                                      dtype=np.int32)
-                relation_tree = np.asarray(train_item_x[2],
+                relation_tree = np.asarray(train_item_x[3],
                                            dtype=np.int32)
 
+                h0 = np.asarray(np.zeros((len(relation_tree), model.level1_hidden),
+                                         dtype=theano.config.floatX))
+                c0 = np.asarray(np.zeros((len(relation_tree), model.level1_hidden),
+                                         dtype=theano.config.floatX))
                 th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
                                               dtype=theano.config.floatX))
                 tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
                                               dtype=theano.config.floatX))
-
-
                 (g, train_loss, y) = train_process(model_name,
                                                    compute_gparams_fn,
-                                                   compute_loss_fn,
-                                                   train_input_x,
-                                                   train_input_y,
-                                                   sens_pos,
+                                                   train_loss_fn,
+                                                   input_x,
+                                                   input_y,
+                                                   mask,
+                                                   h0,
+                                                   c0,
                                                    relation_tree,
                                                    th_init,
                                                    tc_init)
@@ -306,6 +408,7 @@ def run_microblog_experimentV2(load_data,
                           valid_y,
                           compute_loss_fn,
                           compute_error_fn,
+                          lookup_table,
                           "valid")
             valid_idx += 1
             if epoch % 5 == 0:
@@ -317,6 +420,7 @@ def run_microblog_experimentV2(load_data,
                               test_y,
                               compute_loss_fn,
                               compute_error_fn,
+                              lookup_table,
                               "test")
                 test_idx += 1
     return
@@ -463,7 +567,9 @@ if __name__ == "__main__":
     elif dataset_name == "microblog":
         logging.info("loading microblog data now!")
         load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos)
-        x_var = T.fmatrix('x_var')
+        x_var =T.ftensor3('x_var')
+        # get lookup table
+
 
 
     """

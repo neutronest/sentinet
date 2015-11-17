@@ -19,13 +19,14 @@ class SRNN(object):
                  input_var,
                  n_input,
                  n_hidden):
-
+        """
+        apply a dtensor3 data
+        """
         self.input_var = input_var
-        self.sens_pos_var = T.imatrix('sens_pos_var')
         self.n_input = n_input
         self.n_hidden = n_hidden
-
-                # weight define
+        self.mask = T.fmatrix('SRNN_mask')
+        # weight define
         self.W_input = utils.shared_uniform((n_input, n_hidden),
                                             dtype=theano.config.floatX,
                                             name='W_input')
@@ -37,41 +38,29 @@ class SRNN(object):
         self.b_h = utils.shared_zeros((n_hidden,),
                                       dtype=theano.config.floatX,
                                       name='bh')
-
-        self.h0 = utils.shared_zeros((n_hidden,),
-                                     dtype=theano.config.floatX,
-                                     name='h0')
+        self.h0 = T.fmatrix('h0')
 
         self.params = [self.W_input,
                        self.W_hidden,
-                       self.b_h,
-                       self.h0]
+                       self.b_h]
         return
 
-    def _recurrent(self, x_t, h_pre):
+    def _recurrent(self, x_t, m_t, h_pre):
         """
         """
-        h_t = T.nnet.sigmoid(T.dot(x_t, self.W_input) + \
+        h_ct = T.nnet.sigmoid(T.dot(x_t, self.W_input) + \
                              T.dot(h_pre, self.W_hidden) + \
                              self.b_h)
-        return h_t
+        h_t = m_t[:, None] * h_ct + (1 - m_t)[:, None] * h_pre
 
-    def _get_hidden_state(self, sen_pos):
-        words_var = self.input_var[sen_pos[0]:sen_pos[1]]
-        h, _ = theano.scan(fn=self._recurrent,
-                                sequences=words_var,
-                                n_steps=words_var.shape[0],
-                                outputs_info=self.h0)
-        # return the last hidden as the sentence representation
-        return h[-1]
+        return h_t
 
     def build_network(self):
 
-        self.h, _ = theano.scan(fn=self._get_hidden_state,
-                                sequences=self.sens_pos_var,
-                                outputs_info=None)
-
-        self.hidden_states_var = self.h
+        self.h_history, _ = theano.scan(fn=self._recurrent,
+                                sequences=[self.input_var, self.mask],
+                                outputs_info=[self.h0])
+        self.h = self.h_history[-1]
         return
 
 
@@ -160,10 +149,11 @@ class SGRU(object):
                  n_input,
                  n_hidden):
         self.input_var = input_var
-        self.sens_pos_var = T.imatrix('sens_pos_var')
         self.n_input = n_input
         self.n_hidden = n_hidden
 
+        self.mask = T.fmatrix('SGRU_mask')
+        self.h0 = T.fmatrix('SGRU_h0')
         # weight define
         self.W_z = utils.shared_uniform((n_input, n_hidden),
                                         dtype=theano.config.floatX,
@@ -195,13 +185,6 @@ class SGRU(object):
         self.b_h = utils.shared_zeros((n_hidden,),
                                       dtype=theano.config.floatX,
                                       name='GRU_b_h')
-
-        self.h0 = utils.shared_zeros((n_hidden,),
-                                     dtype=theano.config.floatX,
-                                     name='GRU_h0')
-
-
-
         self.params = [self.W_z,
                        self.U_z,
                        self.b_z,
@@ -215,27 +198,23 @@ class SGRU(object):
                        ]
 
         return
-    def _recurrent(self, x_t, h_tm1):
+    def _recurrent(self, x_t, m_t, h_tm1):
 
         r_t = T.nnet.sigmoid(T.dot(x_t, self.W_r) + T.dot(h_tm1, self.U_r) + self.b_r)
         z_t = T.nnet.sigmoid(T.dot(x_t, self.W_z) + T.dot(h_tm1, self.U_z) + self.b_z)
         h_c = T.tanh(T.dot(x_t, self.W_h) + T.dot((r_t * h_tm1), self.U_h) + self.b_h)
-        h = (1-z_t) * h_tm1 + z_t * h_c
+        h_m = (1-z_t) * h_tm1 + z_t * h_c
+
+        h = m_t[:, None] * h_m + (1-m_t)[:, None] * h_tm1
         return h
-
-    def _get_h(self, sen_pos):
-
-        words_var = self.input_var[sen_pos[0]:sen_pos[1]]
-        h, _ = theano.scan(fn=self._recurrent,
-                           sequences=words_var,
-                           outputs_info=self.h0)
-        return h[-1]
 
     def build_network(self):
 
-        self.h, _ = theano.scan(fn=self._get_h,
-                           sequences=self.sens_pos_var,
-                           outputs_info=None)
+        self.h_history, _ = theano.scan(fn=self._recurrent,
+                                sequences=[self.input_var,
+                                           self.mask],
+                                outputs_info=[self.h0])
+        self.h = self.h_history[-1]
         return
 
 """ ================== END SGRU ==================
@@ -350,9 +329,11 @@ class SLSTM(object):
                  n_input,
                  n_hidden):
         self.input_var = input_var
-        self.sens_pos_var = T.imatrix('sens_pos_var')
         self.n_input = n_input
         self.n_hidden = n_hidden
+        self.mask = T.fmatrix('SLSTM_mask')
+        self.h0 = T.fmatrix('SLSTM_h0')
+        self.c0 = T.fmatrix('SLSTM_c0')
 
         self.W_i = utils.shared_orthogonal((n_input, n_hidden),
                                            scale=1.,
@@ -374,6 +355,7 @@ class SLSTM(object):
                                            scale=1.,
                                            dtype=theano.config.floatX,
                                            name='SLSTM_U_f')
+        #TODO: TRICK
         self.b_f = utils.shared_zeros((n_hidden,),
                                       dtype=theano.config.floatX,
                                       name='SLSTM_b_f')
@@ -402,6 +384,7 @@ class SLSTM(object):
                                       dtype=theano.config.floatX,
                                       name='SLSTM_b_o')
 
+        """
         self.h0 = utils.shared_zeros((n_hidden,),
                                      dtype=theano.config.floatX,
                                      name='SLSTM_h0')
@@ -409,15 +392,14 @@ class SLSTM(object):
         self.c0 = utils.shared_zeros((n_hidden,),
                                      dtype=theano.config.floatX,
                                      name='SLSTM_c0')
-
+        """
         self.params = [self.W_i, self.U_i, self.b_i,
                        self.W_f, self.U_f, self.b_f,
                        self.W_c, self.U_c, self.U_c,
-                       self.W_o, self.U_o, self.b_o,
-                       self.h0, self.c0]
+                       self.W_o, self.U_o, self.b_o]
         return
 
-    def _recurrent(self, x_t, h_tm1, c_tm1):
+    def _recurrent(self, x_t, m_t, h_tm1, c_tm1):
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_tm1, self.U_i) + \
                              self.b_i)
@@ -428,26 +410,26 @@ class SLSTM(object):
         c_c = T.tanh(T.dot(x_t, self.W_c) + \
                      T.dot(h_tm1, self.U_c) + \
                      self.b_c)
-        c_t = i_t * c_c + f_t * c_tm1
+        c_mt = i_t * c_c + f_t * c_tm1
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_tm1, self.U_o) + \
                              self.b_o)
-        h_t = o_t * T.tanh(c_t)
-        return h_t, c_t
+        h_mt = o_t * T.tanh(c_t)
 
-    def _get_h(self, sen_pos):
-        words_var = self.input_var[sen_pos[0]:sen_pos[1]]
-        [h, c], _ = theano.scan(fn=self._recurrent,
-                                sequences=words_var,
-                                outputs_info=[self.h0, self.c0])
-        return h[-1]
+        h_t = m_t[:, None] * h_mt + (1 - m_t)[:, None] * h_tm1
+        c_t = m_t[:, None] * c_mt + (1 - m_t)[:, None] * c_tm1
+
+        return h_t, c_t
 
     def build_network(self):
         """
         """
-        self.h, _ = theano.scan(fn=self._get_h,
-                           sequences=self.sens_pos_var,
-                           outputs_info=None)
+        [self.h_history, self.c], _ = theano.scan(fn=self._recurrent,
+                                                  sequences=[self.input_var,
+                                                             self.mask],
+                                                  outputs_info=[self.h0,
+                                                                self.c0])
+        self.h = self.h_history[-1]
         return
 
 class TLSTM(object):

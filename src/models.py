@@ -87,12 +87,18 @@ class Model(object):
         self.output_layer = layer.OutputLayer(n_output,
                                               self.tmodel.y,
                                               "dropout")
-        self.sens_pos_var = self.smodel.sens_pos_var
         self.relation_pairs = self.tmodel.relation_pairs
+
+        self.mask = self.smodel.mask
+        self.h0 = self.smodel.h0
         self.th = self.tmodel.th
         if self.level2_model_name == "tlstm_model":
+            self.c0 = self.smodel.c0
             self.tc = self.tmodel.tc
-
+        else:
+            # NEVER USED
+            self.c0 = T.fmatrix('c0')
+            self.tc = T.fvector('tc')
 
         self.y_pred = self.output_layer.y_pred
         self.y_drop_pred = self.output_layer.y_drop_pred

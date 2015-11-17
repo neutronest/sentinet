@@ -20,7 +20,6 @@ All functions about utterances:
 
 """
 
-
 def gen_structured_data_from_utterances(filename):
     """
 
@@ -151,6 +150,9 @@ def load_utterance_dataset(train_pos, valid_pos):
 
 """
 
+
+
+NONE_WORD_ID = 0
 ERROR_FIND = 0
 SUCCESS_FIND = 0
 SHORT_SENS_FIND = 0
@@ -183,8 +185,53 @@ def generate_words_emb(words, mvectorize):
     return words_emb
 
 
+def build_lookuptable():
+
+    dir_path = "../data/weibo/fold_data/"
+    mv = MVectorize()
+    mv.gen_words_vector("../data/weibo/weiboV2.tsv")
+    # build lookup table
+    words_table = {}
+    lookup_table = []
+    wordid_acc = 1
+    for i in [0, 1, 2, 3, 4]:
+        for topic_id in xrange(51):
+            file_path = dir_path + "fold_" + str(i) + "/" + str(topic_id) + ".txt"
+            print "next!"
+            words_table, lookup_table, wordid_acc = update_lookuptable(file_path,
+                                                                      mv,
+                                                                      words_table,
+                                                                      lookup_table,
+                                                                      wordid_acc)
+
+    return words_table, lookup_table, wordid_acc
+
+def update_lookuptable(file_path,
+                      mvectorize,
+                      words_table,
+                      lookup_table,
+                      wordid_acc):
+    """
+    """
+    with open(file_path, "r") as file_ob:
+        for line in file_ob:
+            line = line.strip()
+            line_json = json.loads(line)
+            words = line_json['words']
+            print "fiter the unseen words"
+            words = filter(lambda x: x in mvectorize.words_model.vocab, words)
+            for word in words:
+                if words_table.get(word) is None:
+                    words_table[word] = wordid_acc
+                    lookup_table.append(mvectorize.words_model[word])
+                    wordid_acc += 1
+
+
+    return words_table, lookup_table, wordid_acc
+
+
 def generate_threadsV2(file_path,
-                       mvectorize,
+                       words_table,
                        n_hidden,
                        data_x,
                        data_y):
@@ -231,76 +278,42 @@ def generate_threadsV2(file_path,
             docid = int(line_json['docid'])
             parent = int(line_json['parent'])
             words = line_json['words']
-            words_emb = generate_words_emb(words, mvectorize)
             # IMPORTANT! change -1, 0, 1 to 0, 1, 2
             label = int(line_json['label'])+1
+            words_ids = [words_table[word] for word in words]
 
+            # applying data
+            if len(words_ids) < 5:
+                words_ids += [NONE_WORD_ID] * (5-len(words_ids))
             if data_x.get(threadid) == None:
-                sens_pos = [0, len(words_emb) -1]
+                max_len = len(words_ids)
                 relation_seq = [docid, parent]
-                data_x[threadid] = [words_emb, [sens_pos], [relation_seq]]
+                mask = [1] * len(words_ids)
+                data_x[threadid] = [[words_ids], max_len, [mask],  [relation_seq]]
             else:
-                data_x[threadid][0] += words_emb
-                last_end_pos = data_x[threadid][1][-1][1]
-                data_x[threadid][1].append([last_end_pos+1, last_end_pos+len(words_emb)])
-                data_x[threadid][2].append([docid, parent])
+                data_x[threadid][0].append(words_ids)
+
+                max_len = len(words_ids) if max_len < len(words_ids) else max_len
+                mask = [1] * len(words_ids)
+                data_x[threadid][1] = max_len
+                data_x[threadid][2].append(mask)
+                data_x[threadid][3].append([docid, parent])
             if data_y.get(threadid) == None:
                 data_y[threadid] = [label]
             else:
                 data_y[threadid].append(label)
-
-            #print "len of words_emb: " + str(len(words_emb))
-            #print data_x[threadid][1][-1]
-            #print len(data_x[threadid][0])
+    #PADDING PROCESS
+    for k, v in data_x.items():
+        # v[0] is the 2d matrix
+        # v[1] is max_len
+        # v[2] is relation_pairs
+        max_len = v[1]
+        for ids, mask in zip(v[0], v[2]):
+            if len(ids) < max_len:
+                padding_len = max_len - len(ids)
+                ids += [NONE_WORD_ID] * padding_len
+                mask += [0] * padding_len
     return (data_x, data_y)
-
-def generate_threads(file_path, mvectorize, data_x, data_y):
-    """ get the well-structured data of train/valid/test
-
-    Parameters:
-    -----------
-    file_path: the sepcific file path
-        type: str
-
-    vectorize: the vectorize object
-        type: vectorize object....
-
-    data_x: the X of train/valid/test
-        type: {threadid:[(docid, parentid, words_emb)]  }
-               threadid: str
-               docid: str
-               parentid: str
-               words_emb: matrix of ndarray
-
-    data_y: the Y of train/valid/test
-        type: {threadid: [(docid, label)]}
-    """
-    with open(file_path, "r") as train_ob:
-        for line in train_ob:
-            line = line.strip()
-            line_json = json.loads(line)
-
-            # parse the conponent
-            threadid = str(line_json['threadid'])
-            docid = str(line_json['docid'])
-            parent = str(line_json['parent'])
-            words = line_json['words']
-            words_emb = generate_words_emb(words, mvectorize)
-            # IMPORTANT! change -1, 0, 1 to 0, 1, 2
-            label = int(line_json['label'])+1
-            cur_item_x = (docid, parent, words_emb)
-            cur_item_y = (docid, label)
-            if data_x.get(threadid) == None:
-                data_x[threadid] = [cur_item_x]
-            else:
-                data_x[threadid].append(cur_item_x)
-
-            if data_y.get(threadid) == None:
-                data_y[threadid] = [(docid, label)]
-            else:
-                data_y[threadid].append((docid, label))
-    return (data_x, data_y)
-
 def load_microblogdata(train_indicators,
                        valid_indicator,
                        test_indicator):
@@ -326,7 +339,14 @@ def load_microblogdata(train_indicators,
     mv = MVectorize()
     mv.gen_words_vector("../data/weibo/weiboV2.tsv")
 
-
+    # build lookup table
+    words_table = {}
+    lookup_table = []
+    wordid_acc = 0
+    words_table, lookup_table, wordid_acc = build_lookuptable()
+    # add random representation for none words
+    lookup_table.append([[0] * 200])
+    words_table["none-word"] = NONE_WORD_ID # TRICKS, don;t touch!
 
     train_x = {}
     train_y = {}
@@ -342,7 +362,7 @@ def load_microblogdata(train_indicators,
         for topic_id in xrange(n_topics):
             file_path = dir_path + "fold_" + str(i) + "/" + str(topic_id) + ".txt"
             (train_x, train_y) = generate_threadsV2(file_path,
-                                                    mv,
+                                                    words_table,
                                                     200,
                                                     train_x,
                                                     train_y)
@@ -352,7 +372,7 @@ def load_microblogdata(train_indicators,
     for topic_id in xrange(n_topics):
         file_path = dir_path + "fold_" + str(valid_indicator) + "/" + str(topic_id) + ".txt"
         (valid_x, valid_y) = generate_threadsV2(file_path,
-                                                mv,
+                                                words_table,
                                                 200,
                                                 valid_x,
                                                 valid_y)
@@ -362,7 +382,7 @@ def load_microblogdata(train_indicators,
     for topic_id in xrange(n_topics):
         file_path = dir_path + "fold_" + str(test_indicator) + "/" + str(topic_id) + ".txt"
         (test_x, test_y) = generate_threadsV2(file_path,
-                                              mv,
+                                              words_table,
                                               200,
                                               test_x,
                                               test_y)
@@ -408,3 +428,7 @@ def train_sen_flatten(thread_data):
         for k, v in sen_dict.items():
             sens.append(v[1])
     return sens
+
+
+if __name__ == "__main__":
+    load_microblogdata([0,1,2], 3, 4)

@@ -112,3 +112,10 @@ class MVectorize(object):
         assert(self.dictionary != None)
         bow_vector = self.dictionary.doc2bow(words)
         return bow_vector
+
+
+if __name__ == "__main__":
+    dir_path = "../data/weibo/fold_data/"
+    mv = MVectorize()
+    mv.gen_words_vector("../data/weibo/weiboV2.tsv")
+    pdb.set_trace()

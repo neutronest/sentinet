@@ -89,34 +89,6 @@ def test_rnn_onestep():
     print "[Test RNN_OneStep OK!]"
     print "====="
 
-
-def test_srnn():
-    """
-    """
-    n_input = 10
-    n_hidden = 50
-    n_output = 3
-    input_var = T.dmatrix('input_var')
-    sens_pos_ndarr = np.asarray([[0, 2], [3,7], [8,10]], dtype=np.int32)
-    sens_pos = theano.shared(sens_pos_ndarr)
-    sens = utils.ndarray_uniform((10, 10),
-                                 dtype=theano.config.floatX)
-
-
-    srnn_model = rnn.SRNN(input_var,
-                          n_input,
-                          n_hidden,
-                          n_output)
-    srnn_model.build_network()
-    # print srnn_model.hidden_states.eval()
-    get_hidden_states_fn = theano.function(inputs=[srnn_model.input_var,
-                                                   srnn_model.sens_pos_var],
-                                           outputs=srnn_model.hidden_states_var)
-    hs = get_hidden_states_fn(sens, sens_pos_ndarr)
-    print hs
-    print "[Test SCNN OK!]"
-    return
-
 def test_trnn():
     """
     """
@@ -271,10 +243,38 @@ def test_tgru():
 
 
 
+
+def test_srnn():
+    input_var = T.ftensor3('input_var')
+    level1_input = 5
+    level1_hidden = 10
+
+    srnn_model = rnn.SRNN(input_var,
+                          level1_input,
+                          level1_hidden)
+    srnn_model.build_network()
+
+    input_x = [[[1,1,1,1,1],
+                [2,2,2,2,2],
+                [3,3,3,3,3]],
+               [[1,1,1,1,1],
+                [2,2,2,2,2],
+                [0,0,0,0,0]]]
+    mask_x = [[1,1],
+              [1,1],
+              [1,0]]
+    input_x = np.transpose(np.asarray(input_x,
+                                      dtype=theano.config.floatX), axes=(1,0,2))
+    h0 = np.asarray(np.zeros((2, level1_hidden),
+                            dtype=theano.config.floatX))
+
+    h_fn = theano.function(inputs=[input_var,
+                                   srnn_model.mask,
+                                   srnn_model.h0],
+                           outputs=srnn_model.h)
+    h_res = h_fn(input_x, mask_x, h0)
+    print h_res
+    pdb.set_trace()
+    return
 if __name__ == "__main__":
-    #test_rnn()
-    #test_rnn_onestep()
-    #test_srnn()
-    #test_trnn()
-    #test_sgru()
-    test_tgru()
+    test_srnn()
