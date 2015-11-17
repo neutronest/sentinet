@@ -112,7 +112,7 @@ def check_process(check_idx,
         input_x = np.transpose(np.asarray(input_x,
                                           dtype=theano.config.floatX),
                                axes=(1,0,2))
-        mask = np.transpose(np.asarray(train_item_x[2],
+        mask = np.transpose(np.asarray(check_item_x[2],
                                        dtype=theano.config.floatX),
                             axes=(1,0,2))
         input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in check_item_y],
