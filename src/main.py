@@ -296,7 +296,7 @@ def run_microblog_experimentV2(load_data,
                 opt.gparams_update(g)
                 # endif
                 train_loss /= len(relation_tree)
-                logging.info("train loss: %f"%(train_loss))
+                #logging.info("train loss: %f"%(train_loss))
                 train_loss_sum += train_loss
                 train_num += 1
                 seq_idx += 1

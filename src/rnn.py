@@ -209,9 +209,7 @@ class SGRU(object):
         return
     def _recurrent(self, x_t, m_t, h_tm1):
 
-        x_emb = self.lookup_table[x_t.flatten()].reshape([x_t.shape[0],
-                                                          config.options['word_dim']])
-
+        x_emb = self.lookup_table[x_t]
         r_t = T.nnet.sigmoid(T.dot(x_emb, self.W_r) + T.dot(h_tm1, self.U_r) + self.b_r)
         z_t = T.nnet.sigmoid(T.dot(x_emb, self.W_z) + T.dot(h_tm1, self.U_z) + self.b_z)
         h_c = T.tanh(T.dot(x_emb, self.W_h) + T.dot((r_t * h_tm1), self.U_h) + self.b_h)
@@ -418,8 +416,7 @@ class SLSTM(object):
 
     def _recurrent(self, x_t, m_t, h_tm1, c_tm1):
 
-        x_emb = self.lookup_table[x_t.flatten()].reshape([x_t.shape[0],
-                                                          config.options['word_dim']])
+        x_emb = self.lookup_table[x_t]
 
         i_t = T.nnet.sigmoid(T.dot(x_emb, self.W_i) + \
                              T.dot(h_tm1, self.U_i) + \
