@@ -7,6 +7,7 @@ import numpy as np
 import sys
 
 sys.path.append("../src")
+import data_process
 import rnn
 import test_cnn
 import utils
@@ -245,26 +246,25 @@ def test_tgru():
 
 
 def test_srnn():
-    input_var = T.ftensor3('input_var')
-    level1_input = 5
+    input_var = T.imatrix('input_var')
+    level1_input = 200
     level1_hidden = 10
 
+
+    words_table, lookup_table, wordid_acc = data_process.build_lookuptable()
+
     srnn_model = rnn.SRNN(input_var,
+                          lookup_table,
                           level1_input,
                           level1_hidden)
     srnn_model.build_network()
 
-    input_x = [[[1,1,1,1,1],
-                [2,2,2,2,2],
-                [3,3,3,3,3]],
-               [[1,1,1,1,1],
-                [2,2,2,2,2],
-                [0,0,0,0,0]]]
+    input_x = [[1, 4, 2],[56, 7, 0]]
     mask_x = [[1,1],
               [1,1],
               [1,0]]
     input_x = np.transpose(np.asarray(input_x,
-                                      dtype=theano.config.floatX), axes=(1,0,2))
+                                      dtype=np.int32), axes=(1, 0))
     h0 = np.asarray(np.zeros((2, level1_hidden),
                             dtype=theano.config.floatX))
 
@@ -274,7 +274,6 @@ def test_srnn():
                            outputs=srnn_model.h)
     h_res = h_fn(input_x, mask_x, h0)
     print h_res
-    pdb.set_trace()
     return
 if __name__ == "__main__":
     test_srnn()

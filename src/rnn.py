@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 import loss
 import utils
-
+import config
 #theano.config.compute_test_value = 'warn'
 
 """============== SRNN ============="""
@@ -17,12 +17,16 @@ class SRNN(object):
     """
     def __init__(self,
                  input_var,
+                 lookup_table,
                  n_input,
                  n_hidden):
         """
         apply a dtensor3 data
         """
         self.input_var = input_var
+        self.lookup_table = utils.sharedX(lookup_table,
+                                          dtype=theano.config.floatX,
+                                          name='W_emb')
         self.n_input = n_input
         self.n_hidden = n_hidden
         self.mask = T.fmatrix('SRNN_mask')
@@ -40,7 +44,8 @@ class SRNN(object):
                                       name='bh')
         self.h0 = T.fmatrix('h0')
 
-        self.params = [self.W_input,
+        self.params = [self.lookup_table,
+                       self.W_input,
                        self.W_hidden,
                        self.b_h]
         return
@@ -48,7 +53,10 @@ class SRNN(object):
     def _recurrent(self, x_t, m_t, h_pre):
         """
         """
-        h_ct = T.nnet.sigmoid(T.dot(x_t, self.W_input) + \
+        x_emb = self.lookup_table[x_t.flatten()].reshape([x_t.shape[0],
+                                                          200])
+
+        h_ct = T.nnet.sigmoid(T.dot(x_emb, self.W_input) + \
                              T.dot(h_pre, self.W_hidden) + \
                              self.b_h)
         h_t = m_t[:, None] * h_ct + (1 - m_t)[:, None] * h_pre
@@ -146,12 +154,15 @@ class SGRU(object):
     """ the sequence GRU"""
     def __init__(self,
                  input_var,
+                 lookup_table,
                  n_input,
                  n_hidden):
         self.input_var = input_var
+        self.lookup_table = utils.sharedX(lookup_table,
+                                          dtype=theano.config.floatX,
+                                          name='W_emb')
         self.n_input = n_input
         self.n_hidden = n_hidden
-
         self.mask = T.fmatrix('SGRU_mask')
         self.h0 = T.fmatrix('SGRU_h0')
         # weight define
@@ -193,15 +204,19 @@ class SGRU(object):
                        self.b_r,
                        self.W_h,
                        self.U_h,
-                       self.b_h
+                       self.b_h,
+                       self.lookup_table
                        ]
 
         return
     def _recurrent(self, x_t, m_t, h_tm1):
 
-        r_t = T.nnet.sigmoid(T.dot(x_t, self.W_r) + T.dot(h_tm1, self.U_r) + self.b_r)
-        z_t = T.nnet.sigmoid(T.dot(x_t, self.W_z) + T.dot(h_tm1, self.U_z) + self.b_z)
-        h_c = T.tanh(T.dot(x_t, self.W_h) + T.dot((r_t * h_tm1), self.U_h) + self.b_h)
+        x_emb = self.lookup_table[x_t.flatten()].reshape([x_t.shape[0],
+                                                          config.options['word_dim']])
+
+        r_t = T.nnet.sigmoid(T.dot(x_emb, self.W_r) + T.dot(h_tm1, self.U_r) + self.b_r)
+        z_t = T.nnet.sigmoid(T.dot(x_emb, self.W_z) + T.dot(h_tm1, self.U_z) + self.b_z)
+        h_c = T.tanh(T.dot(x_emb, self.W_h) + T.dot((r_t * h_tm1), self.U_h) + self.b_h)
         h_m = (1-z_t) * h_tm1 + z_t * h_c
 
         h = m_t[:, None] * h_m + (1-m_t)[:, None] * h_tm1
@@ -325,9 +340,13 @@ class SLSTM(object):
     """ the sequence LSTM """
     def __init__(self,
                  input_var,
+                 lookup_table,
                  n_input,
                  n_hidden):
         self.input_var = input_var
+        self.lookup_table =  utils.sharedX(lookup_table,
+                                           dtype=theano.config.floatX,
+                                           name='W_emb')
         self.n_input = n_input
         self.n_hidden = n_hidden
         self.mask = T.fmatrix('SLSTM_mask')
@@ -395,22 +414,27 @@ class SLSTM(object):
         self.params = [self.W_i, self.U_i, self.b_i,
                        self.W_f, self.U_f, self.b_f,
                        self.W_c, self.U_c, self.U_c,
-                       self.W_o, self.U_o, self.b_o]
+                       self.W_o, self.U_o, self.b_o,
+                       self.lookup_table]
         return
 
     def _recurrent(self, x_t, m_t, h_tm1, c_tm1):
-        i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
+
+        x_emb = self.lookup_table[x_t.flatten()].reshape([x_t.shape[0],
+                                                          config.options['word_dim']])
+
+        i_t = T.nnet.sigmoid(T.dot(x_emb, self.W_i) + \
                              T.dot(h_tm1, self.U_i) + \
                              self.b_i)
-        f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
+        f_t = T.nnet.sigmoid(T.dot(x_emb, self.W_f) + \
                              T.dot(h_tm1, self.U_f) + \
                              self.b_f)
         # c candiate
-        c_c = T.tanh(T.dot(x_t, self.W_c) + \
+        c_c = T.tanh(T.dot(x_emb, self.W_c) + \
                      T.dot(h_tm1, self.U_c) + \
                      self.b_c)
         c_mt = i_t * c_c + f_t * c_tm1
-        o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
+        o_t = T.nnet.sigmoid(T.dot(x_emb, self.W_o) + \
                              T.dot(h_tm1, self.U_o) + \
                              self.b_o)
         h_mt = o_t * T.tanh(c_mt)

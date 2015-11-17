@@ -86,7 +86,6 @@ def check_process(check_idx,
                   data_y,
                   loss_fn,
                   error_fn,
-                  lookup_table,
                   process_type="valid"):
     """ valid or test process
     """
@@ -104,17 +103,10 @@ def check_process(check_idx,
 
         ids_matrix = np.asarray(check_item_x[0],
                                 dtype=theano.config.floatX)
-        input_x = []
-        for ids in ids_matrix:
-            input_x.append([])
-            for word_id in ids:
-                input_x[-1].append(lookup_table[int(word_id)])
-        input_x = np.transpose(np.asarray(input_x,
-                                          dtype=theano.config.floatX),
-                               axes=(1,0,2))
+        input_x = np.transpose(np.asarray(ids_matrix,
+                                          dtype=np.int32))
         mask = np.transpose(np.asarray(check_item_x[2],
-                                       dtype=theano.config.floatX),
-                            axes=(1,0,2))
+                                       dtype=theano.config.floatX))
         input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in check_item_y],
                              dtype=np.int32)
         label_y = np.asarray(check_item_y,
@@ -172,7 +164,6 @@ def run_microblog_experimentV2(load_data,
     """
     # prepare data
     (train_x, train_y, valid_x, valid_y, test_x, test_y) = load_data
-    words_table, lookup_table, wordid_acc = data_process.build_lookuptable()
 
 
     n_train = len(train_x)
@@ -273,14 +264,9 @@ def run_microblog_experimentV2(load_data,
                 # prepare train data
                 ids_matrix = np.asarray(train_item_x[0],
                                         dtype=theano.config.floatX)
-                input_x = []
-                for ids in ids_matrix:
-                    input_x.append([])
-                    for word_id in ids:
-                        input_x[-1].append(lookup_table[int(word_id)])
-                input_x = np.transpose(np.asarray(input_x,
-                                                  dtype=theano.config.floatX),
-                                       axes=(1,0,2))
+
+                input_x = np.transpose(np.asarray(ids_matrix,
+                                                  dtype=np.int32))
                 mask = np.transpose(np.asarray(train_item_x[2],
                                                dtype=theano.config.floatX))
                 input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
@@ -329,7 +315,6 @@ def run_microblog_experimentV2(load_data,
                           valid_y,
                           compute_loss_fn,
                           compute_error_fn,
-                          lookup_table,
                           "valid")
             valid_idx += 1
             if epoch % 5 == 0:
@@ -341,7 +326,6 @@ def run_microblog_experimentV2(load_data,
                               test_y,
                               compute_loss_fn,
                               compute_error_fn,
-                              lookup_table,
                               "test")
                 test_idx += 1
     return
@@ -488,10 +472,11 @@ if __name__ == "__main__":
     elif dataset_name == "microblog":
         logging.info("loading microblog data now!")
         load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos)
-        x_var =T.ftensor3('x_var')
+        x_var =T.imatrix('x_var')
         # get lookup table
 
 
+    words_table, lookup_table, wordid_acc = data_process.build_lookuptable()
 
     """
     ========= Choose Model ==============
@@ -508,6 +493,7 @@ if __name__ == "__main__":
     run_model = models.Model(level1_model_name,
                              level2_model_name,
                              x_var,
+                             lookup_table,
                              level1_input,
                              level1_hidden,
                              level2_input,

@@ -12,6 +12,7 @@ class Model(object):
                  level1_model_name,
                  level2_model_name,
                  input_var,
+                 lookup_table,
                  level1_input,
                  level1_hidden,
                  level2_input,
@@ -46,14 +47,17 @@ class Model(object):
 
         if self.level1_model_name == "srnn_model":
             self.smodel = rnn.SRNN(input_var,
+                                   lookup_table,
                                    self.level1_input,
                                    self.level1_hidden)
         elif self.level1_model_name == "sgru_model":
             self.smodel = rnn.SGRU(input_var,
+                                   lookup_table,
                                    self.level1_input,
                                    self.level1_hidden)
         elif self.level1_model_name == "slstm_model":
             self.smodel = rnn.SLSTM(input_var,
+                                    lookup_table,
                                     self.level1_input,
                                     self.level1_hidden)
         elif self.level1_model_name == "scnn_model":
@@ -84,6 +88,8 @@ class Model(object):
         else:
             print "tmodel foorbar 23333"
         self.tmodel.build_network()
+
+        self.lookup_table = self.smodel.lookup_table
         self.output_layer = layer.OutputLayer(n_output,
                                               self.tmodel.y,
                                               "dropout")
@@ -106,6 +112,7 @@ class Model(object):
         self.loss = self.output_layer.loss
         self.error = self.output_layer.error
         self.params = self.smodel.params + self.tmodel.params
+        self.params.append(self.lookup_table)
         return
 
 """ BELOW ALL ABANDON!"""

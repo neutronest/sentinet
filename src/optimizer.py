@@ -55,7 +55,6 @@ class SGD(OPTIMIZER):
         """
         """
         for param in params:
-            print param
             self.delta_pre[param] = theano.shared(np.zeros(param.get_value(borrow=True).shape,
                                                            dtype=theano.config.floatX))
         return
@@ -99,7 +98,6 @@ class ADADELTA(OPTIMIZER):
         self.acc_grad = {}
         self.acc_update = {}
         for param in params:
-            print param
             self.acc_grad[param] = np.zeros_like(param.get_value())
             self.acc_update[param] = np.zeros_like(param.get_value())
         return
