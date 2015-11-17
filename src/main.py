@@ -102,7 +102,7 @@ def check_process(check_idx,
         assert(check_threadid_x == check_threadid_y)
 
         ids_matrix = np.asarray(check_item_x[0],
-                                dtype=theano.config.floatX)
+                                dtype=np.int32)
         input_x = np.transpose(np.asarray(ids_matrix,
                                           dtype=np.int32))
         mask = np.transpose(np.asarray(check_item_x[2],
@@ -263,7 +263,7 @@ def run_microblog_experimentV2(load_data,
                 assert(train_threadid_x == train_threadid_y)
                 # prepare train data
                 ids_matrix = np.asarray(train_item_x[0],
-                                        dtype=theano.config.floatX)
+                                        dtype=np.int32)
 
                 input_x = np.transpose(np.asarray(ids_matrix,
                                                   dtype=np.int32))
@@ -296,6 +296,7 @@ def run_microblog_experimentV2(load_data,
                 opt.gparams_update(g)
                 # endif
                 train_loss /= len(relation_tree)
+                logging.info("train loss: %f"%(train_loss))
                 train_loss_sum += train_loss
                 train_num += 1
                 seq_idx += 1
@@ -303,7 +304,7 @@ def run_microblog_experimentV2(load_data,
                     # update the params
                     opt.params_update(model.params)
                     train_loss_res = train_loss_sum / train_num
-                    logging.info("train loss: %f"%(train_loss_res))
+                    logging.info("[=== batch train loss: %f ===]"%(train_loss_res))
                     # reinit
                     train_num = 0
                     train_loss_sum = 0.

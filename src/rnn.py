@@ -53,9 +53,7 @@ class SRNN(object):
     def _recurrent(self, x_t, m_t, h_pre):
         """
         """
-        x_emb = self.lookup_table[x_t.flatten()].reshape([x_t.shape[0],
-                                                          200])
-
+        x_emb = self.lookup_table[x_t]
         h_ct = T.nnet.sigmoid(T.dot(x_emb, self.W_input) + \
                              T.dot(h_pre, self.W_hidden) + \
                              self.b_h)
