@@ -194,6 +194,8 @@ def build_lookuptable():
     # build lookup table
     words_table = {}
     lookup_table = []
+    # add none word representation
+    lookup_table.append([0] * config.options['word_dim'])
     wordid_acc = 1
     for i in [0, 1, 2, 3, 4]:
         for topic_id in xrange(51):
