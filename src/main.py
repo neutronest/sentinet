@@ -139,12 +139,12 @@ def check_process(check_idx,
         check_num += 1
         check_error_sum += sum([i for i in check_error if i == 1])
         sen_num += len(relation_tree)
-        # caculate the result
-        check_loss_res = check_loss_sum / check_num
-        check_error_sum = check_error_sum / sen_num
-        logging.info("the %d's %s loss is %f"%(check_idx, process_type, check_loss_res))
-        logging.info("the %d's %s error is %f"%(check_idx, process_type, check_error_sum))
-        return (check_loss_res, check_error_sum)
+    # caculate the result
+    check_loss_res = check_loss_sum / check_num
+    check_error_sum = check_error_sum / sen_num
+    logging.info("the %d's %s loss is %f"%(check_idx, process_type, check_loss_res))
+    logging.info("the %d's %s error is %f"%(check_idx, process_type, check_error_sum))
+    return (check_loss_res, check_error_sum)
 
 """
 ======================= MICROBLOG EXPERIMENT ===========
