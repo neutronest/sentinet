@@ -12,8 +12,7 @@ import numpy as np
 import random
 from collections import OrderedDict
 import utils
-
-
+from theano import ProfileMode
 
 def train_process(model_name,
                   gparams_fn,
@@ -208,7 +207,6 @@ def run_microblog_experimentV2(load_data,
                                                      model.tc],
                                              outputs=gparams_var_list,
                                              on_unused_input='ignore')
-
         train_loss_fn = theano.function(inputs=[model.input_var,
                                                     y_true_var,
                                                     model.mask,
@@ -256,6 +254,7 @@ def run_microblog_experimentV2(load_data,
         logging.info("=== Begin to Train! ===")
         while epoch < n_epochs:
             logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
+            print "began to train epoch %d"%(epoch)
             seq_idx = 0
             epoch += 1
             for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
@@ -310,6 +309,8 @@ def run_microblog_experimentV2(load_data,
                     train_loss_sum = 0.
                     train_loss_res = 0.
             # valid process
+            print "bagan to valid %d"%(valid_idx)
+            logging.info("[VALID PROCESS]")
             check_process(valid_idx,
                           model,
                           valid_x,

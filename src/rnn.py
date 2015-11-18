@@ -53,8 +53,8 @@ class SRNN(object):
     def _recurrent(self, x_t, m_t, h_pre):
         """
         """
-        x_emb = self.lookup_table[x_t]
-        h_ct = T.nnet.sigmoid(T.dot(x_emb, self.W_input) + \
+        #x_emb = self.lookup_table[x_t]
+        h_ct = T.nnet.sigmoid(T.dot(x_t, self.W_input) + \
                              T.dot(h_pre, self.W_hidden) + \
                              self.b_h)
         h_t = m_t[:, None] * h_ct + (1 - m_t)[:, None] * h_pre
@@ -62,9 +62,11 @@ class SRNN(object):
         return h_t
 
     def build_network(self):
-
+        x_emb = self.lookup_table[self.input_var.flatten()].reshape([self.input_var.shape[0],
+                                                                     self.input_var.shape[1],
+                                                                     config.options['word_dim']])
         self.h_history, _ = theano.scan(fn=self._recurrent,
-                                sequences=[self.input_var, self.mask],
+                                sequences=[x_emb, self.mask],
                                 outputs_info=[self.h0])
         self.h = self.h_history[-1]
         return
@@ -208,11 +210,9 @@ class SGRU(object):
 
         return
     def _recurrent(self, x_t, m_t, h_tm1):
-
-        x_emb = self.lookup_table[x_t]
-        r_t = T.nnet.sigmoid(T.dot(x_emb, self.W_r) + T.dot(h_tm1, self.U_r) + self.b_r)
-        z_t = T.nnet.sigmoid(T.dot(x_emb, self.W_z) + T.dot(h_tm1, self.U_z) + self.b_z)
-        h_c = T.tanh(T.dot(x_emb, self.W_h) + T.dot((r_t * h_tm1), self.U_h) + self.b_h)
+        r_t = T.nnet.sigmoid(T.dot(x_t, self.W_r) + T.dot(h_tm1, self.U_r) + self.b_r)
+        z_t = T.nnet.sigmoid(T.dot(x_t, self.W_z) + T.dot(h_tm1, self.U_z) + self.b_z)
+        h_c = T.tanh(T.dot(x_t, self.W_h) + T.dot((r_t * h_tm1), self.U_h) + self.b_h)
         h_m = (1-z_t) * h_tm1 + z_t * h_c
 
         h = m_t[:, None] * h_m + (1-m_t)[:, None] * h_tm1
@@ -220,8 +220,12 @@ class SGRU(object):
 
     def build_network(self):
 
+        x_emb = self.lookup_table[self.input_var.flatten()].reshape([self.input_var.shape[0],
+                                                                     self.input_var.shape[1],
+                                                                     config.options['word_dim']])
+
         self.h_history, _ = theano.scan(fn=self._recurrent,
-                                sequences=[self.input_var,
+                                sequences=[x_emb,
                                            self.mask],
                                 outputs_info=[self.h0])
         self.h = self.h_history[-1]
@@ -416,20 +420,18 @@ class SLSTM(object):
 
     def _recurrent(self, x_t, m_t, h_tm1, c_tm1):
 
-        x_emb = self.lookup_table[x_t]
-
-        i_t = T.nnet.sigmoid(T.dot(x_emb, self.W_i) + \
+        i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_tm1, self.U_i) + \
                              self.b_i)
-        f_t = T.nnet.sigmoid(T.dot(x_emb, self.W_f) + \
+        f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
                              T.dot(h_tm1, self.U_f) + \
                              self.b_f)
         # c candiate
-        c_c = T.tanh(T.dot(x_emb, self.W_c) + \
+        c_c = T.tanh(T.dot(x_t, self.W_c) + \
                      T.dot(h_tm1, self.U_c) + \
                      self.b_c)
         c_mt = i_t * c_c + f_t * c_tm1
-        o_t = T.nnet.sigmoid(T.dot(x_emb, self.W_o) + \
+        o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_tm1, self.U_o) + \
                              self.b_o)
         h_mt = o_t * T.tanh(c_mt)
@@ -442,8 +444,12 @@ class SLSTM(object):
     def build_network(self):
         """
         """
+
+        x_emb = self.lookup_table[self.input_var.flatten()].reshape([self.input_var.shape[0],
+                                                                     self.input_var.shape[1],
+                                                                     config.options['word_dim']])
         [self.h_history, self.c], _ = theano.scan(fn=self._recurrent,
-                                                  sequences=[self.input_var,
+                                                  sequences=[x_emb,
                                                              self.mask],
                                                   outputs_info=[self.h0,
                                                                 self.c0])

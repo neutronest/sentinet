@@ -7,6 +7,7 @@ import numpy as np
 import theano
 import json
 import sys
+import config
 sys.path.append("../microblog")
 from mvectorize import MVectorize
 
@@ -179,7 +180,7 @@ def generate_words_emb(words, mvectorize):
         remain_dim = 5 - len(words_emb)
         # TODO: use 300 here is MAGIC! Need to touch
         for i in xrange(remain_dim):
-            word_vector = np.asarray(np.zeros((200,), dtype=theano.config.floatX))
+            word_vector = np.asarray(np.zeros((config.options['word_dim'],), dtype=theano.config.floatX))
             words_emb.append(word_vector)
     #return np.asarray(words_emb, dtype=theano.config.floatX)
     return words_emb
@@ -197,7 +198,6 @@ def build_lookuptable():
     for i in [0, 1, 2, 3, 4]:
         for topic_id in xrange(51):
             file_path = dir_path + "fold_" + str(i) + "/" + str(topic_id) + ".txt"
-            print "next!"
             words_table, lookup_table, wordid_acc = update_lookuptable(file_path,
                                                                       mv,
                                                                       words_table,
@@ -218,7 +218,7 @@ def update_lookuptable(file_path,
             line = line.strip()
             line_json = json.loads(line)
             words = line_json['words']
-            print "fiter the unseen words"
+            #print "fiter the unseen words"
             words = filter(lambda x: x in mvectorize.words_model.vocab, words)
             for word in words:
                 if words_table.get(word) is None:
@@ -345,7 +345,7 @@ def load_microblogdata(train_indicators,
     wordid_acc = 0
     words_table, lookup_table, wordid_acc = build_lookuptable()
     # add random representation for none words
-    lookup_table.append([[0] * 200])
+    lookup_table.append([[0] * config.options['word_dim']])
     words_table["none-word"] = NONE_WORD_ID # TRICKS, don;t touch!
 
     train_x = {}
@@ -363,7 +363,7 @@ def load_microblogdata(train_indicators,
             file_path = dir_path + "fold_" + str(i) + "/" + str(topic_id) + ".txt"
             (train_x, train_y) = generate_threadsV2(file_path,
                                                     words_table,
-                                                    200,
+                                                    config.options['word_dim'],
                                                     train_x,
                                                     train_y)
 
@@ -373,7 +373,7 @@ def load_microblogdata(train_indicators,
         file_path = dir_path + "fold_" + str(valid_indicator) + "/" + str(topic_id) + ".txt"
         (valid_x, valid_y) = generate_threadsV2(file_path,
                                                 words_table,
-                                                200,
+                                                config.options['word_dim'],
                                                 valid_x,
                                                 valid_y)
 
@@ -383,7 +383,7 @@ def load_microblogdata(train_indicators,
         file_path = dir_path + "fold_" + str(test_indicator) + "/" + str(topic_id) + ".txt"
         (test_x, test_y) = generate_threadsV2(file_path,
                                               words_table,
-                                              200,
+                                              config.options['word_dim'],
                                               test_x,
                                               test_y)
     global ERROR_FIND

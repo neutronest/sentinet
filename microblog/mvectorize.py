@@ -6,6 +6,10 @@ from gensim.models.word2vec import Word2Vec
 import word_cutting
 import mutils
 import pdb
+import sys
+
+sys.path.append("../src")
+import config
 """
 Return Function:
 ----------------
@@ -55,7 +59,7 @@ class MVectorize(object):
         words_num = len([w for words in words_doc for w in words])
         print "[---the words_num of model is %d---]"%(words_num)
         print "[---generate word vectors model!---]"
-        self.words_model = Word2Vec(words_doc, size=200, window=10, min_count=1, workers=4)
+        self.words_model = Word2Vec(words_doc, size=config.options['word_dim'], window=10, min_count=1, workers=4)
         print "[--- word embedding model Done! ---]"
         return
 
