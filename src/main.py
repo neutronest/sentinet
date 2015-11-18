@@ -175,7 +175,8 @@ def run_microblog_experimentV2(load_data,
 
     if model_name == "srnn_trnn_model" \
        or model_name ==  "sgru_tgru_model" \
-       or model_name == "slstm_tlstm_model":
+       or model_name == "slstm_tlstm_model" \
+       or model_name == "sgru_trnn_model":
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
@@ -295,7 +296,7 @@ def run_microblog_experimentV2(load_data,
                 opt.gparams_update(g)
                 # endif
                 train_loss /= len(relation_tree)
-                #logging.info("train loss: %f"%(train_loss))
+                logging.info("train loss: %f"%(train_loss))
                 train_loss_sum += train_loss
                 train_num += 1
                 seq_idx += 1

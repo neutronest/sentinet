@@ -110,7 +110,30 @@ class ADADELTA(OPTIMIZER):
             temp = np.ones_like(gparam) * self.learning_rate
             ugd = np.sqrt(self.acc_update[param] + self.epsilon) / \
                   np.sqrt(self.acc_grad[param] + self.epsilon) * gparam * temp
-            self.acc_update[param] = self.learning_rate * self.acc_update[param] + \
+            self.acc_update[param] = self.decay * self.acc_update[param] + \
                                      (1 - self.decay) * ugd**2
-            param.set_value(param.get_value() - ugd)
+            param.set_value(param.get_value() - self.learning_rate * ugd)
+        return
+
+
+    def numpy_floatX(self, data):
+        return numpy.asarray(data, dtype=config.floatX)
+
+    def params_updateV2(self, params):
+        zipped_grads = [theano.shared(p.get_value() * self.numpy_floatX(0.)) for p in params]
+        running_up2 = [theano.shared(p.get_value() * self.numpy_floatX(0.)) for p in params]
+        running_grads2 = [theano.shared(p.get_value() * self.numpy_floatX(0.)) for p in params]
+
+        zgup = [(zg, g) for zg, g in zip(zipped_grads, self.gparams_acc)]
+        rg2up = [(rg2, 0.95*rg2+0.05*(g*g))
+                 for rg2, g in zip(running_grads2, self.gparams_acc)]
+        updir = [-T.sqrt(ru2 + 1e-6) / T.sqrt(rg2 + 1e-6) * zg
+                 for zg, ru2, rg2 in zip(zipped_grads,
+                                         running_up2,
+                                         running_grads2)]
+
+        ru2up = [(ru2, 0.95*ru2 + 0.05*(ud * ud))
+                 for ru2, ud in zip(running_up2, updir)]
+        for p, ud in zip(params, updir):
+            p.set_value(p.get_value() + ud)
         return
