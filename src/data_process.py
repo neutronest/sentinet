@@ -157,6 +157,8 @@ NONE_WORD_ID = 0
 ERROR_FIND = 0
 SUCCESS_FIND = 0
 SHORT_SENS_FIND = 0
+NONE_WORD_NUM = 0
+LESS_WORD_NUM = 0
 
 def generate_words_emb(words, mvectorize):
     """
@@ -271,6 +273,8 @@ def generate_threadsV2(file_path,
           type: {threadid: [(docid, label)]}
 
     """
+    global NONE_WORD_NUM
+    global LESS_WORD_NUM
     with open(file_path, "r") as train_ob:
         for line in train_ob:
             line = line.strip()
@@ -282,6 +286,14 @@ def generate_threadsV2(file_path,
             words = line_json['words']
             # IMPORTANT! change -1, 0, 1 to 0, 1, 2
             label = int(line_json['label'])+1
+
+            if len(words) == 0:
+                # TRICKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK!
+                # copy it's parent's content
+                words = data_x[threadid][0][parent]
+                NONE_WORD_NUM += 1
+            if len(words) < 5:
+                LESS_WORD_NUM += 1
             words_ids = [words_table[word] for word in words]
 
             # applying data
@@ -391,9 +403,12 @@ def load_microblogdata(train_indicators,
     global ERROR_FIND
     global SUCCESS_FIND
     global SHORT_SENS_FIND
+    global NONE_WORD_NUM
     print "word_vector not found: %d" %(ERROR_FIND)
     print "word_vector found: %d"%(SUCCESS_FIND)
     print "short sens find: %d"%(SHORT_SENS_FIND)
+    print "less word num: %d"%(LESS_WORD_NUM)
+    print "none word num: %d"%(NONE_WORD_NUM)
     return (train_x, train_y, valid_x, valid_y, test_x, test_y)
 
 

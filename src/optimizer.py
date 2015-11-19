@@ -96,13 +96,24 @@ class ADADELTA(OPTIMIZER):
         self.epsilon = epsilon
         self.n_acc = 0
         self.acc_grad = {}
-        self.acc_update = {}
+        self.acc_delta = {}
         for param in params:
             self.acc_grad[param] = np.zeros_like(param.get_value())
-            self.acc_update[param] = np.zeros_like(param.get_value())
+            self.acc_delta[param] = np.zeros_like(param.get_value())
+            #self.acc_update[param] = np.zeros_like(param.get_value())
         return
 
     def params_update(self, params):
+        for p, g_acc in zip(params, self.gparams_acc):
+            g = (1. / self.n_acc) * np.ones_like(g_acc) * g_acc
+            self.acc_grad[p] = self.decay * self.acc_grad[p] + \
+                               (1 - self.decay) * np.ones_like(g) * g * g
+            ugd =  - np.sqrt(self.acc_delta[p] + self.epsilon) / \
+                   np.sqrt(self.acc_grad[p] + self.epsilon) * g
+            self.acc_delta[p] = self.decay * self.acc_delta[p] + \
+                                (1-self.decay) * ugd**2
+            p.set_value(p.get_value() + ugd)
+        """
         for param, gparam in zip(params, self.gparams_acc):
             g =  1. / self.n_acc * np.ones_like(gparam) * gparam
             self.acc_grad[param] = self.decay * self.acc_grad[param] + \
@@ -114,6 +125,7 @@ class ADADELTA(OPTIMIZER):
             self.acc_update[param] = self.decay * self.acc_update[param] + \
                                      (1 - self.decay) * ugd**2
             param.set_value(param.get_value() - self.learning_rate * ugd)
+        """
         return
 
 

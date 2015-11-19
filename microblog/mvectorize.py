@@ -24,6 +24,7 @@ class MVectorize(object):
     def __init__(self):
 
         word_cutting.load_thirdparty_words("../dict/favourate.txt")
+        word_cutting.load_thirdparty_words("../dict/emoji.txt")
         self.dictionary = None
         self.word_pesg_tbl = {} # the word-pesg hashtable
         self.words_doc = None
@@ -38,19 +39,23 @@ class MVectorize(object):
         lines = mutils.get_line_from_file(filepath)
         texts = mutils.get_text_only_from_lines(lines)
         text_filters = []
+        emoji_filters = []
         for text in texts:
             text_filter = ""
             emoji_list, text_filter = word_cutting.filter_emoji_from_textV2(text)
             mention_list, text_filter = word_cutting.filter_syntax_from_textV2(text_filter, '@')
             hashtag_list, text_filter = word_cutting.filter_syntax_from_textV2(text_filter, '#')
             text_filters.append(text_filter)
+            if len(emoji_list) != 0:
+                emoji_filters.append(emoji_list)
+
         words_doc = []
 
         for text in text_filters:
             words = word_cutting.cut_directly(text)
             words_doc.append(words)
-
-        return words_doc
+        """ TRICKS!!! """
+        return words_doc + emoji_filters
 
     def gen_words_vector(self, file_path):
         """
@@ -70,8 +75,7 @@ class MVectorize(object):
         # filter stop words
         stop_words = word_cutting.get_stopwords()
         ## test
-        words_doc = [[word for word in doc if word.encode("utf-8") not in stop_words] for doc in words_doc]
-
+        #words_doc = [[word for word in doc if word.encode("utf-8") not in stop_words] for doc in words_doc]
         self.words_doc = words_doc
         return
 

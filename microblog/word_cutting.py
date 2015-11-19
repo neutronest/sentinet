@@ -17,7 +17,7 @@ def load_thirdparty_words(filepath):
     return
 
 
-def cut_directly(text): 
+def cut_directly(text):
     """ cut words to list from jieba,
         do not filt the stopwords
         do not delete the repeat words
@@ -151,7 +151,9 @@ def filter_emoji_from_textV2(text):
     emoji_res = ["["+str(r.fixed[0])+"]" for r in findall("[{}]", text)]
     text_filter = text
     for emoji in emoji_res:
-        text_filter = text_filter.replace(emoji, "")
+        # DO NOT DELETE the EMOJI DIRECTLY
+        print emoji
+        text_filter = text_filter.replace(emoji, " "+emoji+" ")
     return emoji_res, text_filter
 
 def filter_syntax_from_textV2(text, syntax='@'):
