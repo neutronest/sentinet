@@ -55,7 +55,7 @@ class MVectorize(object):
             words = word_cutting.cut_directly(text)
             words_doc.append(words)
         """ TRICKS!!! """
-        return words_doc + emoji_filters
+        return words_doc
 
     def gen_words_vector(self, file_path):
         """

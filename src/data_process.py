@@ -290,14 +290,14 @@ def generate_threadsV2(file_path,
             if len(words) == 0:
                 # TRICKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK!
                 # copy it's parent's content
-                words = data_x[threadid][0][parent]
+                words_id = data_x[threadid][0][parent]
                 NONE_WORD_NUM += 1
-            if len(words) < 5:
-                LESS_WORD_NUM += 1
-            words_ids = [words_table[word] for word in words]
-
+            else:
+                words_ids = [words_table[word] for word in words \
+                             if words_table.get(word) is not None]
             # applying data
             if len(words_ids) < 5:
+                LESS_WORD_NUM += 1
                 words_ids += [NONE_WORD_ID] * (5-len(words_ids))
             if data_x.get(threadid) == None:
                 max_len = len(words_ids)
@@ -358,6 +358,7 @@ def load_microblogdata(train_indicators,
     lookup_table = []
     wordid_acc = 0
     words_table, lookup_table, wordid_acc = build_lookuptable()
+    print "num of words: %d"%(wordid_acc)
     # add random representation for none words
     lookup_table.append([[0] * config.options['word_dim']])
     words_table["none-word"] = NONE_WORD_ID # TRICKS, don;t touch!
@@ -405,7 +406,7 @@ def load_microblogdata(train_indicators,
     global SHORT_SENS_FIND
     global NONE_WORD_NUM
     print "word_vector not found: %d" %(ERROR_FIND)
-    print "word_vector found: %d"%(SUCCESS_FIND)
+    #print "word_vector found: %d"%(SUCCESS_FIND)
     print "short sens find: %d"%(SHORT_SENS_FIND)
     print "less word num: %d"%(LESS_WORD_NUM)
     print "none word num: %d"%(NONE_WORD_NUM)

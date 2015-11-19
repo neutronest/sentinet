@@ -49,10 +49,10 @@ def cut(text):
     #bi_seg_list = [text[i:i+2] for i in xrange(len(text)-1)]
     #tri_seg_list = [text[i:i+3] for i in xrange(len(text)-2)]
     #seg_list = list(seg_list) + bi_seg_list + tri_seg_list
-    seg_list = list(set(seg_list))
+    #seg_list = list(set(seg_list))
     stop_words = get_stopwords()
-    seg_list = [w for w in seg_list if w.encode("utf-8") not in stop_words]
-    return list(seg_list)
+    #seg_list = [w for w in seg_list if w.encode("utf-8") not in stop_words]
+    return seg_list
 
 def bigram(seg_list):
     """
@@ -152,7 +152,6 @@ def filter_emoji_from_textV2(text):
     text_filter = text
     for emoji in emoji_res:
         # DO NOT DELETE the EMOJI DIRECTLY
-        print emoji
         text_filter = text_filter.replace(emoji, " "+emoji+" ")
     return emoji_res, text_filter
 
