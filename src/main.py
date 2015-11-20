@@ -319,17 +319,16 @@ def run_microblog_experimentV2(load_data,
                           compute_error_fn,
                           "valid")
             valid_idx += 1
-            if epoch % 5 == 0:
-                """  TEST PROCESS """
-                logging.info("[TEST PROCESS]")
-                check_process(test_idx,
-                              model,
-                              test_x,
-                              test_y,
-                              compute_loss_fn,
-                              compute_error_fn,
-                              "test")
-                test_idx += 1
+            """  TEST PROCESS """
+            logging.info("[TEST PROCESS]")
+            check_process(test_idx,
+                          model,
+                          test_x,
+                          test_y,
+                          compute_loss_fn,
+                          compute_error_fn,
+                          "test")
+            test_idx += 1
     return
 
 if __name__ == "__main__":
@@ -466,6 +465,13 @@ if __name__ == "__main__":
     assert(train_pos != None)
     assert(valid_pos != None)
     x_var = None
+
+
+    words_table, lookup_table, wordid_acc = data_process.build_lookuptable()
+    logging.info("words_table len: %d"%(len(words_table)))
+    logging.info("lookup_table len: %d"%(len(lookup_table)))
+    logging.info("wordid_acc: %d"%(wordid_acc))
+
     if dataset_name == "swda":
         load_data = data_process.load_utterance_dataset(train_pos, valid_pos)
         # need dataset description
@@ -473,12 +479,9 @@ if __name__ == "__main__":
         x_var = T.ftensor3('x_var')
     elif dataset_name == "microblog":
         logging.info("loading microblog data now!")
-        load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos)
+        load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos, words_table)
         x_var =T.imatrix('x_var')
         # get lookup table
-
-
-    words_table, lookup_table, wordid_acc = data_process.build_lookuptable()
 
     """
     ========= Choose Model ==============

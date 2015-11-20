@@ -161,34 +161,6 @@ SHORT_SENS_FIND = 0
 NONE_WORD_NUM = 0
 LESS_WORD_NUM = 0
 
-def generate_words_emb(words, mvectorize):
-    """
-    """
-    global ERROR_FIND
-    global SUCCESS_FIND
-    global SHORT_SENS_FIND
-    words_emb = []
-    for word in words:
-        try:
-            SUCCESS_FIND += 1
-            word_vector = mvectorize.words_model[word]
-            words_emb.append(word_vector)
-        except KeyError:
-            #print "[ERROR FIND]"
-            ERROR_FIND += 1
-            continue
-
-    if len(words_emb) < 5:
-        SHORT_SENS_FIND += 1
-        remain_dim = 5 - len(words_emb)
-        # TODO: use 300 here is MAGIC! Need to touch
-        for i in xrange(remain_dim):
-            word_vector = np.asarray(np.zeros((config.options['word_dim'],), dtype=theano.config.floatX))
-            words_emb.append(word_vector)
-    #return np.asarray(words_emb, dtype=theano.config.floatX)
-    return words_emb
-
-
 def build_lookuptable():
 
     dir_path = "../data/weibo/fold_data/"
@@ -230,7 +202,6 @@ def update_lookuptable(file_path,
                     words_table[word] = wordid_acc
                     lookup_table.append(mvectorize.words_model[word])
                     wordid_acc += 1
-
 
     return words_table, lookup_table, wordid_acc
 
@@ -289,12 +260,13 @@ def generate_threadsV2(file_path,
             label = int(line_json['label'])+1
 
             words_ids = [words_table[word] for word in words \
-                        if words_table.get(word)]
+                         if words_table.get(word) != None]
 
             if len(words_ids) == 0:
                 # none word in the weibo
                 # copy it's parent's content
-                words_ids = copy.deepcopy(data_x[threadid][0][parent])
+                #words_ids = copy.deepcopy(data_x[threadid][0][parent])
+                words_ids = [0]
                 NONE_WORD_NUM += 1
 
             # applying data
@@ -330,7 +302,8 @@ def generate_threadsV2(file_path,
 
 def load_microblogdata(train_indicators,
                        valid_indicator,
-                       test_indicator):
+                       test_indicator,
+                       words_table=None):
     """
     load the microblog tree-structure dataset
 
@@ -350,19 +323,8 @@ def load_microblogdata(train_indicators,
 
     # vectorzie init
     dir_path = "../data/weibo/fold_data/"
-    mv = MVectorize()
-    mv.gen_words_vector("../data/weibo/weiboV2.tsv")
 
     # build lookup table
-    words_table = {}
-    lookup_table = []
-    wordid_acc = 0
-    words_table, lookup_table, wordid_acc = build_lookuptable()
-    print "num of words: %d"%(wordid_acc)
-    # add random representation for none words
-    lookup_table.append([[0] * config.options['word_dim']])
-    words_table["none-word"] = NONE_WORD_ID # TRICKS, don;t touch!
-
     train_x = {}
     train_y = {}
     valid_x = {}
@@ -449,4 +411,12 @@ def train_sen_flatten(thread_data):
 
 
 if __name__ == "__main__":
-    load_microblogdata([0,1,2], 3, 4)
+    (train_x, train_y, valid_x, valid_y, test_x, test_y) \
+        = load_microblogdata([0,1,2], 3, 4)
+
+    for data_x in test_x.items():
+        ids_matrix = data_x[0]
+        for ids in ids_matrix:
+            for word_id in ids:
+                if word_id == 33025:
+                    print ids
