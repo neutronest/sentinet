@@ -181,7 +181,7 @@ def run_microblog_experimentV2(load_data,
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
         y_label_var = T.ivector('y_label_var')
-        cost_train_var = model.loss(y_true_var, model.y_drop_pred) + model.L2_sqr
+        cost_train_var = model.loss(y_true_var, model.y_drop_pred) + model.L2
         cost_var = model.loss(y_true_var, model.y_pred) + model.L2
         error_var = model.error(y_label_var, model.output)
 
