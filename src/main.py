@@ -176,7 +176,8 @@ def run_microblog_experimentV2(load_data,
     if model_name == "srnn_trnn_model" \
        or model_name ==  "sgru_tgru_model" \
        or model_name == "slstm_tlstm_model" \
-       or model_name == "sgru_trnn_model":
+       or model_name == "sgru_trnn_model" \
+       or model_name == "slstm_trnn_model":
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
