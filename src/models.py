@@ -113,6 +113,11 @@ class Model(object):
         self.error = self.output_layer.error
         self.params = self.smodel.params + self.tmodel.params
         self.params.append(self.lookup_table)
+
+        # prepare L2_sqr
+        self.L2 = 0
+        for p in self.params:
+            self.L2 += (p**2).sum()
         return
 
 """ BELOW ALL ABANDON!"""

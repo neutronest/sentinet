@@ -181,8 +181,8 @@ def run_microblog_experimentV2(load_data,
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
         y_label_var = T.ivector('y_label_var')
-        cost_train_var = model.loss(y_true_var, model.y_drop_pred)
-        cost_var = model.loss(y_true_var, model.y_pred)
+        cost_train_var = model.loss(y_true_var, model.y_drop_pred) + model.L2_sqr
+        cost_var = model.loss(y_true_var, model.y_pred) + model.L2
         error_var = model.error(y_label_var, model.output)
 
         #theano.printing.pydotprint(cost_var, outfile="./graph.png", var_with_name_simple=True)
@@ -264,7 +264,7 @@ def run_microblog_experimentV2(load_data,
                 # prepare train data
                 ids_matrix = np.asarray(train_item_x[0],
                                         dtype=np.int32)
-
+                # test
                 input_x = np.transpose(np.asarray(ids_matrix,
                                                   dtype=np.int32))
                 mask = np.transpose(np.asarray(train_item_x[2],

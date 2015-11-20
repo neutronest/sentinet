@@ -8,6 +8,7 @@ import theano
 import json
 import sys
 import config
+import copy
 sys.path.append("../microblog")
 from mvectorize import MVectorize
 
@@ -287,26 +288,24 @@ def generate_threadsV2(file_path,
             # IMPORTANT! change -1, 0, 1 to 0, 1, 2
             label = int(line_json['label'])+1
 
-            if len(words) == 0:
-                # TRICKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK!
+            words_ids = [words_table[word] for word in words \
+                        if words_table.get(word)]
+
+            if len(words_ids) == 0:
+                # none word in the weibo
                 # copy it's parent's content
-                words_id = data_x[threadid][0][parent]
+                words_ids = copy.deepcopy(data_x[threadid][0][parent])
                 NONE_WORD_NUM += 1
-            else:
-                words_ids = [words_table[word] for word in words \
-                             if words_table.get(word) is not None]
+
             # applying data
-            if len(words_ids) < 5:
-                LESS_WORD_NUM += 1
-                words_ids += [NONE_WORD_ID] * (5-len(words_ids))
             if data_x.get(threadid) == None:
+                # new thread
                 max_len = len(words_ids)
                 relation_seq = [docid, parent]
                 mask = [1] * len(words_ids)
                 data_x[threadid] = [[words_ids], max_len, [mask],  [relation_seq]]
             else:
                 data_x[threadid][0].append(words_ids)
-
                 max_len = len(words_ids) if max_len < len(words_ids) else max_len
                 mask = [1] * len(words_ids)
                 data_x[threadid][1] = max_len
@@ -328,6 +327,7 @@ def generate_threadsV2(file_path,
                 ids += [NONE_WORD_ID] * padding_len
                 mask += [0] * padding_len
     return (data_x, data_y)
+
 def load_microblogdata(train_indicators,
                        valid_indicator,
                        test_indicator):

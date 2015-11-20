@@ -221,10 +221,17 @@ def test_13():
     return
 
 def test_14():
-    x_var = T.dmatrix('x_var')
-    pos_var = T.dmatrix('pos_var')
+    a = utils.shared_zeros((2, 10),
+                           dtype=theano.config.floatX)
+    b = utils.shared_ones((1, 10),
+                           dtype=theano.config.floatX)
+
+    a[1,:] = b
+    print a.get_value()
     # TODO
     return
+
+
 
 if __name__ == "__main__":
     #test_1()
@@ -233,4 +240,4 @@ if __name__ == "__main__":
     #test_sth()
     #test_4()
     #test_10()
-    test_13()
+    test_14()

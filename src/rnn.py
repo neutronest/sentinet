@@ -322,6 +322,7 @@ class TGRU(object):
         h_t = (1 - z_t) * h_p + z_t * h_c
         h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
         y_t = T.dot(h_t, self.TW_output) + self.b_y
+
         return h_next, y_t
     def build_network(self):
         [self.h, self.y], _ = theano.scan(fn=self._recurrent,
