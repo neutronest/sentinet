@@ -128,6 +128,9 @@ class ADADELTA(OPTIMIZER):
         """
         return
 
+    def learning_rate_decay(self):
+        self.learning_rate *= self.decay
+        return
 
     def numpy_floatX(self, data):
         return numpy.asarray(data, dtype=config.floatX)

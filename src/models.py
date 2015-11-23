@@ -118,7 +118,7 @@ class Model(object):
         self.L2 = 0
         for p in self.params:
             self.L2 += (p**2).sum()
-        self.L2 = T.sqrt(self.L2)
+        self.L2 = T.sqrt(self.L2) * 0.01
         return
 
 """ BELOW ALL ABANDON!"""
