@@ -88,7 +88,7 @@ class ADADELTA(OPTIMIZER):
     def __init__(self,
                 params,
                 learning_rate=1,
-                decay=0.9,
+                decay=0.6,
                 epsilon=1e-6):
         OPTIMIZER.__init__(self)
         self.learning_rate = learning_rate

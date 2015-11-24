@@ -103,6 +103,9 @@ def check_process(check_idx,
     check_loss_res = 0.
     check_error_sum = 0.
     check_error_res = 0.
+
+    polarity_n = [0, 0, 0]
+
     sen_num = 0.
     logging.info("=== check process %d==="%(check_idx))
     check_idx += 1
@@ -145,15 +148,22 @@ def check_process(check_idx,
                                                                 relation_tree,
                                                                 th_init,
                                                                 tc_init)
+        for p in check_output:
+            polarity_n[p] += 1
         check_loss_sum += (check_loss / len(relation_tree))
         check_num += 1
         check_error_sum += sum([i for i in check_error if i == 1])
         sen_num += len(relation_tree)
+
+
     # caculate the result
     check_loss_res = check_loss_sum / check_num
     check_error_sum = check_error_sum / sen_num
     logging.info("the %d's %s loss is %f"%(check_idx, process_type, check_loss_res))
     logging.info("the %d's %s error is %f"%(check_idx, process_type, check_error_sum))
+    logging.info("valid pred polarity distribute: %d %d %d"%(polarity_n[0],
+                                                           polarity_n[1],
+                                                           polarity_n[2]))
     return (check_loss_res, check_error_sum)
 
 """
@@ -166,7 +176,8 @@ def run_microblog_experimentV2(load_data,
                                batch_size,
                                n_epochs,
                                learning_rate,
-                               optimizer_method):
+                               optimizer_method,
+                               valid_frequency=100):
     """ the microblog experimentV2
 
 
@@ -266,6 +277,7 @@ def run_microblog_experimentV2(load_data,
         train_loss_sum = 0.
         train_error_sum = 0
         sen_num = 0
+        polarity_train_n = [0, 0, 0]
         logging.info("=== Begin to Train! ===")
         while epoch < n_epochs:
             logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
@@ -320,6 +332,9 @@ def run_microblog_experimentV2(load_data,
                 sen_num += len(relation_tree)
                 train_num += 1
                 seq_idx += 1
+                for p in y:
+                    polarity_train_n[p] += 1
+
                 if seq_idx % batch_size == 0:
                     # update the params
                     opt.params_update(model.params)
@@ -327,23 +342,28 @@ def run_microblog_experimentV2(load_data,
                     logging.info("[=== batch train loss: %f ===]"%(train_loss_res))
                     train_error_res = train_error_sum * 1. / sen_num
                     logging.info("[=== batch train error: %f ===]"%(train_error_res))
+                    logging.info("train pred distributed %d %d %d"%(polarity_train_n[0],
+                                                                    polarity_train_n[1],
+                                                                    polarity_train_n[2]))
                     # reinit
                     train_num = 0
                     train_loss_sum = 0.
                     train_loss_res = 0.
                     train_error_sum = 0.
                     sen_num = 0
-            # valid process
-            print "bagan to valid %d"%(valid_idx)
-            logging.info("[VALID PROCESS]")
-            check_process(valid_idx,
-                          model,
-                          valid_x,
-                          valid_y,
-                          compute_loss_fn,
-                          compute_error_fn,
-                          "valid")
-            valid_idx += 1
+                    polarity_train_n = [0, 0, 0]
+                if seq_idx % valid_frequency == 0:
+                    # valid process
+                    print "bagan to valid %d"%(valid_idx)
+                    logging.info("[VALID PROCESS]")
+                    check_process(valid_idx,
+                                  model,
+                                  valid_x,
+                                  valid_y,
+                                  compute_loss_fn,
+                                  compute_error_fn,
+                                  "valid")
+                    valid_idx += 1
             """  TEST PROCESS """
             logging.info("[TEST PROCESS]")
             check_process(test_idx,
@@ -548,6 +568,7 @@ if __name__ == "__main__":
                                batch_size,
                                n_epochs,
                                learning_rate,
-                               optimizer_method)
+                               optimizer_method,
+                               valid_frequency)
     # different dataset has different variable types
     # dtensor3, imatrix

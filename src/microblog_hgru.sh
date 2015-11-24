@@ -18,12 +18,12 @@ cmd="python main.py
     --optimizer_method=adadelta
     --learning_rate=1
     --batch_type=minibatch
-    --batch_size=100
+    --batch_size=10
     --n_epochs=100
     --train_pos=0@1@2
     --valid_pos=3
     --test_pos=4
-    --valid_frequency=1000"
+    --valid_frequency=200"
 
 if [ $# -eq 0 ]; then
     THEANO_FLAGS="mode=FAST_RUN,floatX=float32" $cmd
