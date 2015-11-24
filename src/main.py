@@ -182,6 +182,7 @@ def run_microblog_experimentV2(load_data,
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
         y_label_var = T.ivector('y_label_var')
+
         cost_train_var = model.loss(y_true_var, model.y_drop_pred) + model.L2
         cost_var = model.loss(y_true_var, model.y_pred) + model.L2
         error_var = model.error(y_label_var, model.output)
@@ -353,7 +354,7 @@ if __name__ == "__main__":
          "level2_input=",
          "level2_hidden=",
          "n_output=",
-         "dropout_rate=",
+         "if_dropout=",
          "optimizer_method=",
          "learning_rate=",
          "batch_type=",
@@ -410,9 +411,9 @@ if __name__ == "__main__":
         elif opt == "--n_output":
             n_output = int(arg)
 
-        elif opt == "--dropout_rate":
+        elif opt == "--if_dropout":
             # example of arg: 0.5 of str
-            dropout_rate = float(arg)
+            if_dropout = arg
 
         elif opt == "--optimizer_method":
             optimizer_method = arg
@@ -507,7 +508,8 @@ if __name__ == "__main__":
                              n_output,
                              word_dim,
                              cnn_n_feature_maps,
-                             cnn_window_sizes)
+                             cnn_window_sizes,
+                             if_dropout)
 
     # begin to experiment
     assert(run_model != None)

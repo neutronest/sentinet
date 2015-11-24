@@ -38,9 +38,10 @@ class OutputLayer(object):
             rng = np.random.RandomState(1234)
             self.y_drop = self.dropout_layer(rng, self.y, 0.5)
             self.y_drop_pred = T.nnet.softmax(self.y_drop)
-
-        self.y = self.y * 0.5
-        self.y_pred = T.nnet.softmax(self.y)
+            self.y = self.y * 0.5
+        else:
+            self.y_pred = T.nnet.softmax(self.y)
+            self.y_drop_pred = self.y_pred
 
         self.output = T.argmax(self.y_pred, axis=1)
         self.loss = loss.nll_multiclass

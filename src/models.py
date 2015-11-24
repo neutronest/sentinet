@@ -20,7 +20,8 @@ class Model(object):
                  n_output,
                  word_dim=None,
                  n_feature_maps=None,
-                 window_sizes=None,):
+                 window_sizes=None,
+                 if_dropout="dropout"):
 
         # variable init
         self.level1_model_name = level1_model_name
@@ -92,7 +93,7 @@ class Model(object):
         self.lookup_table = self.smodel.lookup_table
         self.output_layer = layer.OutputLayer(n_output,
                                               self.tmodel.y,
-                                              "dropout")
+                                              if_dropout)
         self.relation_pairs = self.tmodel.relation_pairs
 
         self.mask = self.smodel.mask
