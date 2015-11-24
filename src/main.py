@@ -17,8 +17,10 @@ from theano import ProfileMode
 def train_process(model_name,
                   gparams_fn,
                   loss_fn,
+                  error_fn,
                   data_x,
                   data_y,
+                  label_y,
                   mask,
                   h0,
                   c0,
@@ -43,7 +45,15 @@ def train_process(model_name,
                               relation_tree,
                               th_init,
                               tc_init)
-    return (g, train_loss, y)
+    [train_error, y] = error_fn(data_x,
+                                label_y,
+                                mask,
+                                h0,
+                                c0,
+                                relation_tree,
+                                th_init,
+                                tc_init)
+    return (g, train_loss, train_error, y)
 
 def check_compute(model_name,
                   loss_fn,
@@ -183,8 +193,8 @@ def run_microblog_experimentV2(load_data,
         y_true_var = T.imatrix('y_true_var')
         y_label_var = T.ivector('y_label_var')
 
-        cost_train_var = model.loss(y_true_var, model.y_drop_pred) + model.L2
-        cost_var = model.loss(y_true_var, model.y_pred) + model.L2
+        cost_train_var = model.loss(y_true_var, model.y_drop_pred)
+        cost_var = model.loss(y_true_var, model.y_pred)
         error_var = model.error(y_label_var, model.output)
 
         #theano.printing.pydotprint(cost_var, outfile="./graph.png", var_with_name_simple=True)
@@ -254,6 +264,8 @@ def run_microblog_experimentV2(load_data,
         train_num = 0
         train_loss_res = 0.
         train_loss_sum = 0.
+        train_error_sum = 0
+        sen_num = 0
         logging.info("=== Begin to Train! ===")
         while epoch < n_epochs:
             logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
@@ -273,6 +285,9 @@ def run_microblog_experimentV2(load_data,
                                                dtype=theano.config.floatX))
                 input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
                                            dtype=np.int32)
+
+                label_y = np.asarray(train_item_y,
+                                     dtype=np.int32)
                 relation_tree = np.asarray(train_item_x[3],
                                            dtype=np.int32)
 
@@ -284,21 +299,25 @@ def run_microblog_experimentV2(load_data,
                                               dtype=theano.config.floatX))
                 tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
                                               dtype=theano.config.floatX))
-                (g, train_loss, y) = train_process(model_name,
-                                                   compute_gparams_fn,
-                                                   train_loss_fn,
-                                                   input_x,
-                                                   input_y,
-                                                   mask,
-                                                   h0,
-                                                   c0,
-                                                   relation_tree,
-                                                   th_init,
-                                                   tc_init)
+                (g, train_loss, train_error, y) = train_process(model_name,
+                                                                compute_gparams_fn,
+                                                                train_loss_fn,
+                                                                compute_error_fn,
+                                                                input_x,
+                                                                input_y,
+                                                                label_y,
+                                                                mask,
+                                                                h0,
+                                                                c0,
+                                                                relation_tree,
+                                                                th_init,
+                                                                tc_init)
                 opt.gparams_update(g)
                 # endif
                 train_loss /= len(relation_tree)
                 train_loss_sum += train_loss
+                train_error_sum += sum([i for i in train_error if i == 1])
+                sen_num += len(relation_tree)
                 train_num += 1
                 seq_idx += 1
                 if seq_idx % batch_size == 0:
@@ -306,6 +325,8 @@ def run_microblog_experimentV2(load_data,
                     opt.params_update(model.params)
                     train_loss_res = train_loss_sum / train_num
                     logging.info("[=== batch train loss: %f ===]"%(train_loss_res))
+                    train_error_res = train_error_sum * 1. / sen_num
+                    logging.info("[=== batch train error: %f ===]"%(train_error_res))
                     # reinit
                     train_num = 0
                     train_loss_sum = 0.
