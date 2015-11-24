@@ -331,6 +331,7 @@ def run_microblog_experimentV2(load_data,
                     train_num = 0
                     train_loss_sum = 0.
                     train_loss_res = 0.
+                    sen_num = 0
             # valid process
             print "bagan to valid %d"%(valid_idx)
             logging.info("[VALID PROCESS]")

@@ -378,9 +378,9 @@ class SLSTM(object):
         #self.b_f = utils.shared_zeros((n_hidden,),
         #                              dtype=theano.config.floatX,
         #                              name='SLSTM_b_f')
-        self.b_f = 2 * utils.shared_ones((n_hidden,),
-                                         dtype=theano.config.floatX,
-                                         name='SLSTM_b_f')
+        self.b_f = utils.sharedX(np.ones((n_hidden),
+                                         dtype=theano.config.floatX),
+                                 name='SLSTM_b_f')
 
 
         self.W_c = utils.shared_orthogonal((n_input, n_hidden),
