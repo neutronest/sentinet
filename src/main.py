@@ -198,7 +198,8 @@ def run_microblog_experimentV2(load_data,
        or model_name ==  "sgru_tgru_model" \
        or model_name == "slstm_tlstm_model" \
        or model_name == "sgru_trnn_model" \
-       or model_name == "slstm_trnn_model":
+       or model_name == "slstm_trnn_model" \
+       or model_name == "lstm_model":
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
@@ -341,10 +342,7 @@ def run_microblog_experimentV2(load_data,
                     train_loss_res = train_loss_sum / train_num
                     logging.info("[=== batch train loss: %f ===]"%(train_loss_res))
                     train_error_res = train_error_sum * 1. / sen_num
-                    logging.info("[=== batch train error: %f ===]"%(train_error_res))
-                    logging.info("train pred distributed %d %d %d"%(polarity_train_n[0],
-                                                                    polarity_train_n[1],
-                                                                    polarity_train_n[2]))
+
                     # reinit
                     train_num = 0
                     train_loss_sum = 0.
@@ -540,19 +538,30 @@ if __name__ == "__main__":
     assert(level1_model_name != None)
     assert(level2_model_name != None)
     # define model
-    run_model = models.Model(level1_model_name,
-                             level2_model_name,
-                             x_var,
-                             lookup_table,
-                             level1_input,
-                             level1_hidden,
-                             level2_input,
-                             level2_hidden,
-                             n_output,
-                             word_dim,
-                             cnn_n_feature_maps,
-                             cnn_window_sizes,
-                             if_dropout)
+    if model_name == "lstm_model":
+        run_model = models.SingleModel(model_name,
+                                       x_var,
+                                       lookup_table,
+                                       level1_input,
+                                       level1_hidden,
+                                       n_output,
+                                       if_dropout)
+
+    else:
+
+        run_model = models.Model(level1_model_name,
+                                 level2_model_name,
+                                 x_var,
+                                 lookup_table,
+                                 level1_input,
+                                 level1_hidden,
+                                 level2_input,
+                                 level2_hidden,
+                                 n_output,
+                                 word_dim,
+                                 cnn_n_feature_maps,
+                                 cnn_window_sizes,
+                                 if_dropout)
 
     # begin to experiment
     assert(run_model != None)

@@ -318,5 +318,9 @@ def test_model():
     return
 
 
+def test_singlemodel():
+
+    model =
+
 if __name__ == "__main__":
     test_model()

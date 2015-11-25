@@ -156,13 +156,16 @@ class SGRU(object):
                  input_var,
                  lookup_table,
                  n_input,
-                 n_hidden):
+                 n_hidden,
+                 sigle_mode=False,
+                 n_output=None):
         self.input_var = input_var
         self.lookup_table = utils.sharedX(lookup_table,
                                           dtype=theano.config.floatX,
                                           name='W_emb')
         self.n_input = n_input
         self.n_hidden = n_hidden
+
         self.mask = T.fmatrix('SGRU_mask')
         self.h0 = T.fmatrix('SGRU_h0')
         # weight define
@@ -196,6 +199,8 @@ class SGRU(object):
         self.b_h = utils.shared_zeros((n_hidden,),
                                       dtype=theano.config.floatX,
                                       name='GRU_b_h')
+
+
         self.params = [self.W_z,
                        self.U_z,
                        self.b_z,
@@ -577,129 +582,45 @@ class TLSTM(object):
                                                   outputs_info=[self.th, self.tc, None])
         return
 
-class RNN_OneStep(object):
-    """ the simple RNN without "scan".
-    """
-
+class LSTM(SLSTM):
     def __init__(self,
                  input_var,
-                 y_pre_var,
+                 lookup_table,
                  n_input,
                  n_hidden,
-                 n_output,
-                 h_tm1):
-        """
-        the init
-
-        Parameters:
-        -----------
-        input_var: the input theano variable
-            type: theano tensor of dvector
-
-        y_pre_var: the previous y vector
-            type: theano tensor of dvector
-
-
-        n_input: the size of input layer
-            type: int
-
-        n_hidden: the size of hidden layer
-            type: int
-
-        n_output: the sizs of output layer
-            type: int
-
-        h_tm1: the previous hidden theano tensor variable
-            type: theano variable of dvector
-        """
-
-        self.input_var = input_var
-        self.y_pre_var = y_pre_var
-        self.n_input = n_input
-        self.n_hidden = n_hidden
-        self.n_output = n_output
-        self.h_tm1 = h_tm1
-        # weight define
-        self.W_input = utils.shared_uniform((n_input, n_hidden),
-                                     dtype=theano.config.floatX,
-                                     name='W_in')
-        self.W_hidden = utils.shared_uniform((n_hidden, n_hidden),
-                                      dtype=theano.config.floatX,
-                                      name='W_hidden')
+                 n_output):
+        self.output = n_output
+        SLSTM.__init__(self,
+                       input_var,
+                       lookup_table,
+                       n_input,
+                       n_hidden)
         self.W_output = utils.shared_uniform((n_hidden, n_output),
-                                      dtype=theano.config.floatX,
-                                      name='W_output')
-        self.W_hy = utils.shared_uniform((n_output, n_hidden),
-                                         dtype=theano.config.floatX,
-                                         name='W_hy')
-
-        self.b_h = utils.shared_zeros((n_hidden,),
-                                      dtype=theano.config.floatX,
-                                      name='bh')
-        self.b_y = utils.shared_zeros((n_output,),
-                                      dtype=theano.config.floatX,
-                                      name='by')
-
-        self.params = [self.W_input,
-                       self.W_hidden,
-                       self.W_output,
-                       self.W_hy,
-                       self.b_h,
-                       self.b_y]
-
+                                             dtype=theano.config.floatX,
+                                             name="LSTM_output")
+        self.b_y = utils.shared_zeros((n_output),
+                                     dtype=theano.config.floatX,
+                                     name="LSTM_by")
+        self.params = [self.W_i, self.U_i, self.b_i,
+                       self.W_f, self.U_f, self.b_f,
+                       self.W_c, self.U_c, self.U_c,
+                       self.W_o, self.U_o, self.b_o,
+                       self.W_output, self.b_y,
+                       self.lookup_table]
         return
-
-    def _recurrent(self, x_t, h_pre):
-        h_t = T.nnet.sigmoid(T.dot(x_t, self.W_input) \
-                             + T.dot(h_pre, self.W_hidden) \
-                             + T.dot(self.y_pre_var, self.W_hy) \
-                             + self.b_h)
-        y_t = T.dot(h_t, self.W_output) + self.b_y
-        return h_t, y_t
 
     def build_network(self):
-
-        self.h, self.y_t = self._recurrent(self.input_var, self.h_tm1)
-        self.y_pred = T.nnet.softmax(self.y_t)
-        self.output_var = T.argmax(self.y_pred, axis=1)
-        self.loss = loss.nll_multiclass
-        self.error = loss.mean_classify_error
-        return
-
-    # end RNN_OneStep ===================================
-class GRU_OneStep(object):
-    """
-    """
-    def __init__(self,
-                 input_var,
-                 n_input,
-                 n_hidden,
-                 n_output,
-                 h_tm1):
         """
-        the init
-
-        Parameters:
-        -----------
-        input_var: the input theano variable
-            type: theano tensor of dvector
-
-        n_input: the size of input layer
-            type: int
-
-        n_hidden: the size of hidden layer
-            type: int
-
-        n_output: the sizs of output layer
-            type: int
-
-        h_tm1: the previous hidden theano tensor variable
-            type: theano variable of dvector
         """
-        self.input_var = input_var
-        self.n_input = n_input
-        self.n_hideen = n_hidden
-        self.n_output = n_output
-        self.h_tm1 = h_tm1
 
+        x_emb = self.lookup_table[self.input_var.flatten()].reshape([self.input_var.shape[0],
+                                                                     self.input_var.shape[1],
+                                                                     config.options['word_dim']])
+        [self.h_history, self.c], _ = theano.scan(fn=self._recurrent,
+                                                  sequences=[x_emb,
+                                                             self.mask],
+                                                  outputs_info=[self.h0,
+                                                                self.c0])
+        self.h = self.h_history[-1]
+        self.y = T.dot(self.h, self.W_output) + self.b_y
         return

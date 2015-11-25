@@ -88,7 +88,7 @@ class ADADELTA(OPTIMIZER):
     def __init__(self,
                 params,
                 learning_rate=1,
-                decay=0.6,
+                 decay=0.95,
                 epsilon=1e-6):
         OPTIMIZER.__init__(self)
         self.learning_rate = learning_rate
@@ -98,7 +98,6 @@ class ADADELTA(OPTIMIZER):
         self.acc_grad = {}
         self.acc_delta = {}
         for param in params:
-            print param
             print type(param)
             self.acc_grad[param] = np.zeros_like(param.get_value())
             self.acc_delta[param] = np.zeros_like(param.get_value())
