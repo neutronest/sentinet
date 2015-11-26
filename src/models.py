@@ -67,6 +67,11 @@ class Model(object):
                                    self.word_dim,
                                    self.n_feature_maps,
                                    self.window_sizes)
+        elif self.level1_model_name == "lstm_avg_model":
+            self.smodel = rnn.SLSTM_avg(input_var,
+                                        lookup_table,
+                                        self.level1_input,
+                                        self.level1_hidden)
         else:
             print "none smodel"
         self.smodel.build_network()
@@ -86,6 +91,12 @@ class Model(object):
                                     self.level2_input,
                                     self.level2_hidden,
                                     self.n_output)
+
+        elif self.level2_model_name == "tlstm_s_model":
+            self.tmodel = rnn.TLSTM_s(self.smodel.h,
+                                      self.level2_input,
+                                      self.level2_hidden,
+                                      self.n_output)
         else:
             print "none tmodel"
         self.tmodel.build_network()
@@ -147,14 +158,20 @@ class SingleModel(object):
                                   n_input,
                                   n_hidden,
                                   n_output)
-            self.h0 = self.model.h0
-            self.c0 = self.model.c0
+        if model_name == "lstm_avg_model":
+            self.model = rnn.LSTM_avg(input_var,
+                                      lookup_table,
+                                      n_input,
+                                      n_hidden,
+                                      n_output)
+        self.h0 = self.model.h0
+        self.c0 = self.model.c0
             # not used
-            self.th = T.fvector('th')
-            self.tc = T.fvector('tc')
-            self.relation_pairs = T.imatrix('relation_pairs')
-            self.level1_hidden = self.model.n_hidden
-            self.level2_hidden = 1
+        self.th = T.fvector('th')
+        self.tc = T.fvector('tc')
+        self.relation_pairs = T.imatrix('relation_pairs')
+        self.level1_hidden = self.model.n_hidden
+        self.level2_hidden = 1
         self.model.build_network()
         self.y = self.model.y
         self.output_layer = layer.OutputLayer(n_output,

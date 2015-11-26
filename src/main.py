@@ -199,7 +199,9 @@ def run_microblog_experimentV2(load_data,
        or model_name == "slstm_tlstm_model" \
        or model_name == "sgru_trnn_model" \
        or model_name == "slstm_trnn_model" \
-       or model_name == "lstm_model":
+       or model_name == "lstm_model" \
+       or model_name == "lstm_avg_model" \
+       or model_name == "hlstm_s_model":
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
@@ -538,7 +540,8 @@ if __name__ == "__main__":
     assert(level1_model_name != None)
     assert(level2_model_name != None)
     # define model
-    if model_name == "lstm_model":
+    if model_name == "lstm_model" or \
+       model_name == "lstm_avg_model":
         run_model = models.SingleModel(model_name,
                                        x_var,
                                        lookup_table,

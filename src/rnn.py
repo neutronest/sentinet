@@ -582,6 +582,116 @@ class TLSTM(object):
                                                   outputs_info=[self.th, self.tc, None])
         return
 
+
+
+class SLSTM_avg(SLSTM):
+    """
+    using avarage hidden of LSTM
+    """
+    def __init__(self,
+                 input_var,
+                 lookup_table,
+                 n_input,
+                 n_hidden):
+        SLSTM.__init__(self,
+                       input_var,
+                       lookup_table,
+                       n_input,
+                       n_hidden)
+        return
+
+    def build_network(self):
+        x_emb = self.lookup_table[self.input_var.flatten()].reshape([self.input_var.shape[0],
+                                                                     self.input_var.shape[1],
+                                                                     config.options['word_dim']])
+        [self.h_history, self.c], _ = theano.scan(fn=self._recurrent,
+                                                  sequences=[x_emb,
+                                                             self.mask],
+                                                  outputs_info=[self.h0,
+                                                                self.c0])
+        self.h = T.mean(self.h_history, axis=0)
+        return
+
+
+class TLSTM_s(TLSTM):
+    """
+    a strong version of TLSTM
+    """
+    def __init__(self,
+                input_var,
+                n_input,
+                n_hidden,
+                n_output):
+        TLSTM.__init__(self,
+                      input_var,
+                      n_input,
+                      n_hidden,
+                      n_output)
+
+        self.P_i = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTM_P_i")
+        self.P_f = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTM_P_f")
+        self.P_o = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTM_P_o")
+        self.params += [self.P_i, self.P_f, self.P_o]
+
+        return
+
+    def _recurrent(self, relation_pair, h_tm1, c_tm1):
+        """
+        """
+        c = relation_pair[0]
+        p = relation_pair[1]
+        x_t = self.input_var[c]
+        h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+        c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+
+        i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
+                             T.dot(h_p, self.U_i) + \
+                             T.dot(c_tm1, self.P_i) + \
+                             self.b_i)
+        f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
+                             T.dot(h_p, self.U_f) + \
+                             T.dot(c_tm1, self.P_f) + \
+                             self.b_f)
+        # c candiate
+        c_c = T.tanh(T.dot(x_t, self.W_c) + \
+                     T.dot(h_p, self.U_c) + \
+                     self.b_c)
+        c_t = i_t * c_c + f_t * c_p
+        o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
+                             T.dot(h_p, self.U_o) + \
+                             T.dot(c_t, self.P_o) + \
+                             self.b_o)
+        h_t = o_t * T.tanh(c_t)
+
+        h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
+        c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
+        y_t = T.dot(h_t, self.TW_output) + self.b_y
+        return h_next, c_next, y_t
+
+
+class TLSTM_f(TLSTM):
+
+    def __init__(self,
+                 input_var,
+                 n_input,
+                 n_hidden,
+                 n_output):
+        TLSTM.__init__(self,
+                       input_var,
+                       n_input,
+                       n_hidden,
+                       n_output)
+
+        return
+
+
+
 class LSTM(SLSTM):
     def __init__(self,
                  input_var,
@@ -622,5 +732,40 @@ class LSTM(SLSTM):
                                                   outputs_info=[self.h0,
                                                                 self.c0])
         self.h = self.h_history[-1]
+        self.y = T.dot(self.h, self.W_output) + self.b_y
+        return
+
+class LSTM_avg(LSTM):
+    """
+    single lstm with avg hidden layer
+    """
+    def __init__(self,
+                 input_var,
+                 lookup_table,
+                 n_input,
+                 n_hidden,
+                 n_output):
+        LSTM.__init__(self,
+                      input_var,
+                      lookup_table,
+                      n_input,
+                      n_hidden,
+                      n_output)
+
+        return
+
+    def build_network(self):
+        """
+        """
+
+        x_emb = self.lookup_table[self.input_var.flatten()].reshape([self.input_var.shape[0],
+                                                                     self.input_var.shape[1],
+                                                                     config.options['word_dim']])
+        [self.h_history, self.c], _ = theano.scan(fn=self._recurrent,
+                                                  sequences=[x_emb,
+                                                             self.mask],
+                                                  outputs_info=[self.h0,
+                                                                self.c0])
+        self.h = T.mean(self.h_history,axis=0)
         self.y = T.dot(self.h, self.W_output) + self.b_y
         return
