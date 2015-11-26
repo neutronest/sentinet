@@ -205,7 +205,6 @@ def update_lookuptable(file_path,
 
     return words_table, lookup_table, wordid_acc
 
-
 def generate_threadsV2(file_path,
                        words_table,
                        n_hidden,
@@ -247,18 +246,29 @@ def generate_threadsV2(file_path,
     """
     global NONE_WORD_NUM
     global LESS_WORD_NUM
+    features = ["polarity",
+                "author",
+                "similarity",
+                "emoji",
+                "hashtag",
+                "mention"]
+
     with open(file_path, "r") as train_ob:
         for line in train_ob:
             line = line.strip()
             line_json = json.loads(line)
-            # parse the conponent
+            # parse the component
             threadid = str(line_json['threadid'])
             docid = int(line_json['docid'])
             parent = int(line_json['parent'])
             words = line_json['words']
             # IMPORTANT! change -1, 0, 1 to 0, 1, 2
             label = int(line_json['label'])+1
+            emoji = line_json['emoji']
+            mention = line_json['mention']
+            hashtag = line_json['hashtag']
 
+            # prepare words_ids
             words_ids = [words_table[word] for word in words \
                          if words_table.get(word) != None]
 
@@ -269,13 +279,20 @@ def generate_threadsV2(file_path,
                 words_ids = [0]
                 NONE_WORD_NUM += 1
 
+            # prepare features for RNN
+            # polarity
+            d_polarity = [0, 0]
+            if parent != -1 and label == data_y[threadid][parent]:
+                d_polarity[0] = 1
+
+
             # applying data
             if data_x.get(threadid) == None:
                 # new thread
                 max_len = len(words_ids)
                 relation_seq = [docid, parent]
                 mask = [1] * len(words_ids)
-                data_x[threadid] = [[words_ids], max_len, [mask],  [relation_seq]]
+                data_x[threadid] = [[words_ids], max_len, [mask],  [relation_seq], []]
             else:
                 data_x[threadid][0].append(words_ids)
                 max_len = len(words_ids) if max_len < len(words_ids) else max_len

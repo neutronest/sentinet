@@ -652,11 +652,11 @@ class TLSTM_s(TLSTM):
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
-                             T.dot(c_tm1, self.P_i) + \
+                             T.dot(c_p, self.P_i) + \
                              self.b_i)
         f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
                              T.dot(h_p, self.U_f) + \
-                             T.dot(c_tm1, self.P_f) + \
+                             T.dot(c_p, self.P_f) + \
                              self.b_f)
         # c candiate
         c_c = T.tanh(T.dot(x_t, self.W_c) + \
