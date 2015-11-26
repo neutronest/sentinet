@@ -110,13 +110,10 @@ class Model(object):
         self.mask = self.smodel.mask
         self.h0 = self.smodel.h0
         self.th = self.tmodel.th
-        if self.level2_model_name == "tlstm_model":
-            self.c0 = self.smodel.c0
-            self.tc = self.tmodel.tc
-        else:
-            # NEVER USED
-            self.c0 = T.fmatrix('c0')
-            self.tc = T.fvector('tc')
+        self.c0 = self.smodel.c0 if self.smodel.c0 is not None \
+                  else T.fmatrix('c0')
+        self.tc = self.tmodel.tc if self.tmodel.tc is not None \
+                  else T.fvector('tc')
 
         self.y_pred = self.output_layer.y_pred
         self.y_drop_pred = self.output_layer.y_drop_pred
