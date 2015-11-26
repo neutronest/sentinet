@@ -67,7 +67,7 @@ class Model(object):
                                    self.word_dim,
                                    self.n_feature_maps,
                                    self.window_sizes)
-        elif self.level1_model_name == "lstm_avg_model":
+        elif self.level1_model_name == "slstm_avg_model":
             self.smodel = rnn.SLSTM_avg(input_var,
                                         lookup_table,
                                         self.level1_input,
