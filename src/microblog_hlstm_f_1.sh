@@ -2,10 +2,10 @@
 cmd="python main.py
     --experiment=microblog
     --model_name=hlstm_s_model
-    --level1_model_name=slstm_avg_model
-    --level2_model_name=tlstm_s_model
+    --level1_model_name=slstm_model
+    --level2_model_name=tlstm_f_model
     --dataset_name=microblog
-    --log_path=../logs/weibo_hlstm_s_1.txt
+    --log_path=../logs/weibo_hlstm_f_1.txt
     --word_dim=64
     --level1_input=64
     --level1_hidden=100

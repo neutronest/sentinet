@@ -11,7 +11,7 @@ import config
 import copy
 sys.path.append("../microblog")
 from mvectorize import MVectorize
-
+from collections import OrderedDict
 """
 ============================ SWDA utterances ===============================
 
@@ -193,6 +193,7 @@ def update_lookuptable(file_path,
     with open(file_path, "r") as file_ob:
         for line in file_ob:
             line = line.strip()
+
             line_json = json.loads(line)
             words = line_json['words']
             #print "fiter the unseen words"
@@ -204,6 +205,36 @@ def update_lookuptable(file_path,
                     wordid_acc += 1
 
     return words_table, lookup_table, wordid_acc
+
+
+def generate_feature(json_dict,
+                     feature_name,
+                     feature,
+                     parent,
+                     grandpa,
+                     edge_type="equal"):
+    """
+
+    """
+    d_feature = [0, 0]
+    if edge_type == "equal":
+        d_feature[0] = 1 if parent != -1 and \
+                       feature == json_dict[parent][feature_name] \
+                       else 0
+        d_feature[1] = 1 if grandpa != -1 and \
+                       feature == json_dict[grandpa][feature_name] \
+                       else 0
+    elif edge_type == "contain":
+        d_feature[0] = 1 if parent != -1 and \
+                       len(set(feature).intersection(set(json_dict[parent][feature_name]))) > 0 \
+                       else 0
+        d_feature[1] = 1 if parent != -1 and \
+                       len(set(feature).intersection(set(json_dict[grandpa][feature_name]))) > 0 \
+                       else 0
+    else:
+        print "foobar"
+    return d_feature
+
 
 def generate_threadsV2(file_path,
                        words_table,
@@ -253,6 +284,8 @@ def generate_threadsV2(file_path,
                 "hashtag",
                 "mention"]
 
+    content_dict = OrderedDict()
+
     with open(file_path, "r") as train_ob:
         for line in train_ob:
             line = line.strip()
@@ -265,9 +298,29 @@ def generate_threadsV2(file_path,
             # IMPORTANT! change -1, 0, 1 to 0, 1, 2
             label = int(line_json['label'])+1
             emoji = line_json['emoji']
+            author = line_json['username']
             mention = line_json['mention']
             hashtag = line_json['hashtag']
 
+            if content_dict.get(threadid) != None:
+
+                content_dict[threadid].append({'docid': docid,
+                                               'parent': parent,
+                                               'label': label,
+                                               'emoji': emoji,
+                                               'author': author,
+                                               'mention': mention,
+                                               'hashtag': hashtag})
+            else:
+                content_dict[threadid] = [{
+                    'docid': docid,
+                    'parent': parent,
+                    'label': label,
+                    'emoji': emoji,
+                    'author': author,
+                    'mention': mention,
+                    'hashtag': hashtag
+                }]
             # prepare words_ids
             words_ids = [words_table[word] for word in words \
                          if words_table.get(word) != None]
@@ -282,17 +335,24 @@ def generate_threadsV2(file_path,
             # prepare features for RNN
             # polarity
             d_polarity = [0, 0]
-            if parent != -1 and label == data_y[threadid][parent]:
-                d_polarity[0] = 1
+            # check if parent and grandpa exist
 
+            grandpa = content_dict[threadid][parent]['parent'] if parent != -1 else -1
 
+            # features
+            d_polarity = generate_feature(content_dict[threadid], "label", label, parent, grandpa, "equal")
+            d_author = generate_feature(content_dict[threadid], "author", author, parent, grandpa, "equal")
+            d_emoji = generate_feature(content_dict[threadid], "emoji", emoji, parent, grandpa, "contain")
+            d_hashtag = generate_feature(content_dict[threadid], "hashtag", hashtag, parent, grandpa, "contain")
+            d_mention = generate_feature(content_dict[threadid], "mention", mention, parent, grandpa, "contain")
+            d_t = d_polarity + d_author + d_emoji + d_hashtag + d_mention
             # applying data
             if data_x.get(threadid) == None:
                 # new thread
                 max_len = len(words_ids)
                 relation_seq = [docid, parent]
                 mask = [1] * len(words_ids)
-                data_x[threadid] = [[words_ids], max_len, [mask],  [relation_seq], []]
+                data_x[threadid] = [[words_ids], max_len, [mask],  [relation_seq], [d_t]]
             else:
                 data_x[threadid][0].append(words_ids)
                 max_len = len(words_ids) if max_len < len(words_ids) else max_len
@@ -300,6 +360,7 @@ def generate_threadsV2(file_path,
                 data_x[threadid][1] = max_len
                 data_x[threadid][2].append(mask)
                 data_x[threadid][3].append([docid, parent])
+                data_x[threadid][4].append(d_t)
             if data_y.get(threadid) == None:
                 data_y[threadid] = [label]
             else:
@@ -428,12 +489,7 @@ def train_sen_flatten(thread_data):
 
 
 if __name__ == "__main__":
+    words_table, lookup_table, wordid_acc = build_lookuptable()
     (train_x, train_y, valid_x, valid_y, test_x, test_y) \
-        = load_microblogdata([0,1,2], 3, 4)
-
-    for data_x in test_x.items():
-        ids_matrix = data_x[0]
-        for ids in ids_matrix:
-            for word_id in ids:
-                if word_id == 33025:
-                    print ids
+        = load_microblogdata([0,1,2], 3, 4, words_table)
+    pdb.set_trace()

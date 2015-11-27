@@ -688,7 +688,60 @@ class TLSTM_f(TLSTM):
                        n_hidden,
                        n_output)
 
+        self.D_i = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
+                                             dtype=theano.config.floatX,
+                                             name='TLSTMf_D_i')
+        self.D_f = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
+                                             dtype=theano.config.floatX,
+                                             name='TLSTMf_D_f')
+        self.D_o = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
+                                             dtype=theano.config.floatX,
+                                             name='TLSTMf_D_o')
+        self.D_c = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
+                                             dtype=theano.config.floatX,
+                                             name='TLSTMf_D_c')
+
+        self.dt = T.fmatrix('dt')
+        self.params += [self.D_i, self.D_f, self.D_o, self.D_c]
         return
+
+    def _recurrent(self, relation_pair, h_tm1, c_tm1):
+        """
+        """
+        c = relation_pair[0]
+        p = relation_pair[1]
+        x_t = self.input_var[c]
+        h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+        c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+        d_p = self.dt[c]
+
+        i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
+                             T.dot(h_p, self.U_i) + \
+#                             T.dot(c_p, self.P_i) + \
+                             T.dot(d_p, self.D_i) + \
+                             self.b_i)
+        f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
+                             T.dot(h_p, self.U_f) + \
+ #                            T.dot(c_p, self.P_f) + \
+                             T.dot(d_p, self.D_f) + \
+                             self.b_f)
+        # c candiate
+        c_c = T.tanh(T.dot(x_t, self.W_c) + \
+                     T.dot(h_p, self.U_c) + \
+                     T.dot(d_p, self.D_c) + \
+                     self.b_c)
+        c_t = i_t * c_c + f_t * c_p
+        o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
+                             T.dot(h_p, self.U_o) + \
+#                             T.dot(c_t, self.P_o) + \
+                             T.dot(d_p, self.D_o) + \
+                             self.b_o)
+        h_t = o_t * T.tanh(c_t)
+
+        h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
+        c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
+        y_t = T.dot(h_t, self.TW_output) + self.b_y
+        return h_next, c_next, y_t
 
 
 

@@ -97,6 +97,11 @@ class Model(object):
                                       self.level2_input,
                                       self.level2_hidden,
                                       self.n_output)
+        elif self.level2_model_name == "tlstm_f_model":
+            self.tmodel = rnn.TLSTM_f(self.smodel.h,
+                                      self.level2_input,
+                                      self.level2_hidden,
+                                      self.n_output)
         else:
             print "none tmodel"
         self.tmodel.build_network()
@@ -114,6 +119,9 @@ class Model(object):
                   else T.fmatrix('c0')
         self.tc = self.tmodel.tc if self.tmodel.tc is not None \
                   else T.fvector('tc')
+        self.dt = self.tmodel.dt if self.tmodel.dt is not None \
+                  else T.fvector('dt')
+
 
         self.y_pred = self.output_layer.y_pred
         self.y_drop_pred = self.output_layer.y_drop_pred
