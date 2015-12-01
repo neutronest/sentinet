@@ -14,6 +14,9 @@ from collections import OrderedDict
 import utils
 from theano import ProfileMode
 
+
+theano.config.exception_verbosity='high'
+
 def train_process(model_name,
                   gparams_fn,
                   loss_fn,
@@ -162,10 +165,11 @@ def check_process(check_idx,
         tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
                                       dtype=theano.config.floatX))
         dt = np.asarray(check_item_x[4], dtype=theano.config.floatX)
-        yt = np.asarray([0]+check_item_y, dtype=np.int32)
+        yt = np.asarray([0, 0, 0] + \
+                        [[1 if i == y else 0 for i in xrange(3)]  for y in check_item_y],
+                        dtype=theano.config.floatX)
         yt_pred = np.asarray(np.zeros_like(yt),
-                             dtype=np.int32)
-
+                             dtype=theano.config.floatX)
         (check_loss, check_error, check_output) = check_compute(model_name,
                                                                 loss_fn,
                                                                 error_fn,
@@ -333,9 +337,11 @@ def run_microblog_experimentV2(load_data,
                                               dtype=theano.config.floatX))
                 dt = np.asarray(train_item_x[4],
                                 dtype=theano.config.floatX)
-                yt = np.asarray([0]+train_item_y, dtype=np.int32)
+                yt = np.asarray([0, 0, 0] + \
+                                [[1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
+                                dtype=theano.config.floatX)
                 yt_pred = np.asarray(np.zeros_like(yt),
-                                     dtype=np.int32)
+                                     dtype=theano.config.floatX)
                 (g, train_loss, train_error, y) = train_process(model_name,
                                                                 compute_gparams_fn,
                                                                 train_loss_fn,
