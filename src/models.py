@@ -117,7 +117,7 @@ class Model(object):
         self.th = self.tmodel.th
         self.c0  = getattr(self.smodel, 'c0', T.fmatrix('c0'))
         self.tc = getattr(self.tmodel, 'tc', T.fvector('tc'))
-        self.dt = getattr(self.tmodel, 'dt', T.fvector('dt'))
+        self.dt = getattr(self.tmodel, 'dt', T.fmatrix('dt'))
         self.yt = getattr(self.tmodel, 'yt', T.ivector('yt'))
         self.yt_pred = getattr(self.tmodel, 'yt_pred', T.ivector('yt_pred'))
         self.if_train_var = getattr(self.tmodel, 'if_train_var', T.scalar('if_train_var'))

@@ -723,8 +723,6 @@ class TLSTM_f(TLSTM):
                        T.concatenate(self.dt[c], self.yt[p+1]),
                        T.concatenate(self.dt[c], self.yt_pred[p+1]))
 
-        d_p = T.concatenate(self.dt[c], yt_tm1)
-
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
                              T.dot(d_p, self.D_i) + \
@@ -797,7 +795,41 @@ class TLSTM_fc(TLSTM):
 
         c = idx
         p = r[idx]
+        x_t = self.input_var[c]
+        h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+        c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
 
+        d_p = T.switch(if_train,
+                       T.concatenate(self.dt[c], self.yt[p+1]),
+                       T.concatenate(self.dt[c], self.yt_pred[p+1]))
+        d_tm1 = T.swtich(if_train,
+                         T.concatenate(self.dt[p], self.yt[r[p]+1]),
+                         T.concatenate(self.dt[p], self.yt_pred[r[p]+1]))
+
+        i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
+                             T.dot(h_p, self.U_i) + \
+                             T.dot(d_p, self.D_i) + \
+                             self.b_i)
+        f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
+                             T.dot(h_p, self.U_f) + \
+                             T.dot(d_p, self.D_f) + \
+                             self.b_f)
+        # c candiate
+        c_c = T.tanh(T.dot(x_t, self.W_c) + \
+                     T.dot(h_p, self.U_c) + \
+                     T.dot(d_p, self.D_c) + \
+                     self.b_c)
+        c_t = i_t * c_c + f_t * c_p
+        o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
+                             T.dot(h_p, self.U_o) + \
+#                             T.dot(c_t, self.P_o) + \
+                             T.dot(d_p, self.D_o) + \
+                             self.b_o)
+        h_t = o_t * T.tanh(c_t)
+        y_t = T.dot(h_t, self.TW_output) + self.b_y
+        h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
+        c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
+        self.yt_pred[c+1] = T.argmax(T.nnet.softmax(y_t))
         return
 
 
