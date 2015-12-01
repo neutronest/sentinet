@@ -98,7 +98,7 @@ class ADADELTA(OPTIMIZER):
         self.acc_grad = {}
         self.acc_delta = {}
         for param in params:
-            print type(param)
+            print param
             self.acc_grad[param] = np.zeros_like(param.get_value())
             self.acc_delta[param] = np.zeros_like(param.get_value())
             #self.acc_update[param] = np.zeros_like(param.get_value())

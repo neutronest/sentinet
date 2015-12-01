@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
 options = {
-    "word_dim": 64,
+    "word_dim": 100,
     "dfeature_len": 9
 }
