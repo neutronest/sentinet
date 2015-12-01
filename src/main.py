@@ -24,38 +24,50 @@ def train_process(model_name,
                   mask,
                   h0,
                   c0,
-                  relation_tree,
+                  relations,
                   th_init=None,
                   tc_init=None,
-                  dt=None):
+                  dt=None,
+                  yt=None,
+                  yt_pred=None,
+                  if_train=None):
 
     g = gparams_fn(data_x,
                    data_y,
                    mask,
                    h0,
                    c0,
-                   relation_tree,
+                   relations,
                    th_init,
                    tc_init,
-                   dt)
+                   dt,
+                   yt,
+                   yt_pred,
+                   1)
     [train_loss, y] = loss_fn(data_x,
                               data_y,
                               mask,
                               h0,
                               c0,
-                              relation_tree,
+                              relations,
                               th_init,
                               tc_init,
-                              dt)
+                              dt,
+                              yt,
+                              yt_pred,
+                              0)
     [train_error, y] = error_fn(data_x,
                                 label_y,
                                 mask,
                                 h0,
                                 c0,
-                                relation_tree,
+                                relations,
                                 th_init,
                                 tc_init,
-                                dt)
+                                dt,
+                                yt,
+                                yt_pred,
+                                0)
     return (g, train_loss, train_error, y)
 
 def check_compute(model_name,
@@ -67,29 +79,38 @@ def check_compute(model_name,
                   mask,
                   h0,
                   c0,
-                  relation_tree,
+                  relations,
                   th_init=None,
                   tc_init=None,
-                  dt=None):
+                  dt=None,
+                  yt=None,
+                  yt_pred=None,
+                  if_train=None):
 
     [check_loss, check_output] = loss_fn(data_x,
                                          data_y,
                                          mask,
                                          h0,
                                          c0,
-                                         relation_tree,
+                                         relations,
                                          th_init,
                                          tc_init,
-                                         dt)
+                                         dt,
+                                         yt,
+                                         yt_pred,
+                                         0)
     [check_error, check_output] = error_fn(data_x,
                                            label_y,
                                            mask,
                                            h0,
                                            c0,
-                                           relation_tree,
+                                           relations,
                                            th_init,
                                            tc_init,
-                                           dt)
+                                           dt,
+                                           yt,
+                                           yt_pred,
+                                           0)
 
     return (check_loss, check_error, check_output)
 
@@ -129,18 +150,22 @@ def check_process(check_idx,
         label_y = np.asarray(check_item_y,
                              dtype=np.int32)
 
-        relation_tree = np.asarray(check_item_x[3],
-                                   dtype=np.int32)
+        relations = np.asarray(check_item_x[3],
+                               dtype=np.int32)
 
-        h0 = np.asarray(np.zeros((len(relation_tree), model.level1_hidden),
+        h0 = np.asarray(np.zeros((len(relations), model.level1_hidden),
                                  dtype=theano.config.floatX))
-        c0 = np.asarray(np.zeros((len(relation_tree), model.level1_hidden),
+        c0 = np.asarray(np.zeros((len(relations), model.level1_hidden),
                                  dtype=theano.config.floatX))
-        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
+        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
                                       dtype=theano.config.floatX))
-        tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
+        tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
                                       dtype=theano.config.floatX))
         dt = np.asarray(check_item_x[4], dtype=theano.config.floatX)
+        yt = [0] + label_y
+        yt_pred = np.asarray(np.zeros_like(yt),
+                             dtype=np.int32)
+
         (check_loss, check_error, check_output) = check_compute(model_name,
                                                                 loss_fn,
                                                                 error_fn,
@@ -150,16 +175,19 @@ def check_process(check_idx,
                                                                 mask,
                                                                 h0,
                                                                 c0,
-                                                                relation_tree,
+                                                                relations,
                                                                 th_init,
                                                                 tc_init,
-                                                                dt)
+                                                                dt,
+                                                                yt,
+                                                                yt_pred,
+                                                                0)
         for p in check_output:
             polarity_n[p] += 1
-        check_loss_sum += (check_loss / len(relation_tree))
+        check_loss_sum += (check_loss / len(relations))
         check_num += 1
         check_error_sum += sum([i for i in check_error if i == 1])
-        sen_num += len(relation_tree)
+        sen_num += len(relations)
 
 
     # caculate the result
@@ -230,53 +258,28 @@ def run_microblog_experimentV2(load_data,
         gparams_var_list = T.grad(cost_train_var, model.params)
 
 
-        compute_gparams_fn = theano.function(inputs=[model.input_var,
-                                                     y_true_var,
-                                                     model.mask,
-                                                     model.h0,
-                                                     model.c0,
-                                                     model.relation_pairs,
-                                                     model.th,
-                                                     model.tc,
-                                                     model.dt],
+        fn_loss_vars = [model.input_var, y_true_var, model.mask, model.h0,
+                       model.c0, model.relations, model.th, model.tc,
+                       model.dt, model.yt, model.yt_pred, model.if_train]
+        fn_error_vars = [model.input_var, y_label_var, model.mask, model.h0,
+                       model.c0, model.relations, model.th, model.tc,
+                       model.dt, model.yt, model.yt_pred, model.if_train]
+
+        compute_gparams_fn = theano.function(inputs=fn_loss_vars,
                                              outputs=gparams_var_list,
                                              on_unused_input='ignore')
 
-        train_loss_fn = theano.function(inputs=[model.input_var,
-                                                y_true_var,
-                                                model.mask,
-                                                model.h0,
-                                                model.c0,
-                                                model.relation_pairs,
-                                                model.th,
-                                                model.tc,
-                                                model.dt],
+        train_loss_fn = theano.function(inputs=fn_loss_vars,
                                         outputs=[cost_train_var,
                                                  model.y_pred],
                                         on_unused_input='ignore')
 
-        compute_loss_fn = theano.function(inputs=[model.input_var,
-                                                  y_true_var,
-                                                  model.mask,
-                                                  model.h0,
-                                                  model.c0,
-                                                  model.relation_pairs,
-                                                  model.th,
-                                                  model.tc,
-                                                  model.dt],
+        compute_loss_fn = theano.function(inputs=fn_loss_vars,
                                           outputs=[cost_var,
                                                    model.y_pred],
                                           on_unused_input='ignore')
 
-        compute_error_fn = theano.function(inputs=[model.input_var,
-                                                   y_label_var,
-                                                   model.mask,
-                                                   model.h0,
-                                                   model.c0,
-                                                   model.relation_pairs,
-                                                   model.th,
-                                                   model.tc,
-                                                   model.dt],
+        compute_error_fn = theano.function(inputs=fn_error_vars,
                                            outputs=[error_var,
                                                     model.output],
                                            on_unused_input='ignore')
@@ -314,20 +317,22 @@ def run_microblog_experimentV2(load_data,
 
                 label_y = np.asarray(train_item_y,
                                      dtype=np.int32)
-                relation_tree = np.asarray(train_item_x[3],
+                relations = np.asarray(train_item_x[3],
                                            dtype=np.int32)
 
-                h0 = np.asarray(np.zeros((len(relation_tree), model.level1_hidden),
+                h0 = np.asarray(np.zeros((len(relations), model.level1_hidden),
                                          dtype=theano.config.floatX))
-                c0 = np.asarray(np.zeros((len(relation_tree), model.level1_hidden),
+                c0 = np.asarray(np.zeros((len(relations), model.level1_hidden),
                                          dtype=theano.config.floatX))
-                th_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
+                th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
                                               dtype=theano.config.floatX))
-                tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relation_tree)+1),
+                tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
                                               dtype=theano.config.floatX))
-
                 dt = np.asarray(train_item_x[4],
                                 dtype=theano.config.floatX)
+                yt = [0] + label_y
+                yt_pred = np.asarray(np.zeros_like(yt),
+                                     dtype=np.int32)
                 (g, train_loss, train_error, y) = train_process(model_name,
                                                                 compute_gparams_fn,
                                                                 train_loss_fn,
@@ -338,16 +343,19 @@ def run_microblog_experimentV2(load_data,
                                                                 mask,
                                                                 h0,
                                                                 c0,
-                                                                relation_tree,
+                                                                relations,
                                                                 th_init,
                                                                 tc_init,
-                                                                dt)
+                                                                dt,
+                                                                yt,
+                                                                yt_pred,
+                                                                1)
                 opt.gparams_update(g)
                 # endif
-                train_loss /= len(relation_tree)
+                train_loss /= len(relations)
                 train_loss_sum += train_loss
                 train_error_sum += sum([i for i in train_error if i == 1])
-                sen_num += len(relation_tree)
+                sen_num += len(relations)
                 train_num += 1
                 seq_idx += 1
                 for p in y:

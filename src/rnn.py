@@ -252,7 +252,7 @@ class TGRU(object):
         self.input_var = input_var
         self.n_input = n_input
         self.n_hidden = n_hidden
-        self.relation_pairs = T.imatrix('relation_pairs')
+        self.relations = T.ivector('relations')
         self.th = T.fvector('th')
 
         self.W_z = utils.shared_uniform((n_input, n_hidden),
@@ -305,12 +305,12 @@ class TGRU(object):
         return
 
 
-    def _recurrent(self, relation_pair, h_tm1):
+    def _recurrent(self, idx, h_tm1, r):
         """
 
         """
-        c = relation_pair[0]
-        p = relation_pair[1]
+        c = idx
+        p = r[idx]
         x_t = self.input_var[c]
         h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
 
@@ -331,7 +331,8 @@ class TGRU(object):
         return h_next, y_t
     def build_network(self):
         [self.h, self.y], _ = theano.scan(fn=self._recurrent,
-                                          sequences=self.relation_pairs,
+                                          sequences=T.arange(self.relations.shape[0]),
+                                          non_sequences=self.relations,
                                           outputs_info=[self.th, None])
         return
 
@@ -478,7 +479,7 @@ class TLSTM(object):
         self.input_var = input_var
         self.n_input = n_input
         self.n_hidden = n_hidden
-        self.relation_pairs = T.imatrix('relation_pairs')
+        self.relations = T.ivector('relations')
         self.th = T.fvector('th')
         self.tc = T.fvector('tc')
 
@@ -546,11 +547,11 @@ class TLSTM(object):
 
         return
 
-    def _recurrent(self, relation_pair, h_tm1, c_tm1):
+    def _recurrent(self, idx, h_tm1, c_tm1, r):
         """
         """
-        c = relation_pair[0]
-        p = relation_pair[1]
+        c = idx
+        p = r[idx]
         x_t = self.input_var[c]
         h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
         c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
@@ -578,7 +579,8 @@ class TLSTM(object):
 
     def build_network(self):
         [self.h, self.c, self.y], _ = theano.scan(fn=self._recurrent,
-                                                  sequences=self.relation_pairs,
+                                                  sequences=T.arange(self.relations.shape[0]),
+                                                  non_sequences=self.relations,
                                                   outputs_info=[self.th, self.tc, None])
         return
 
@@ -641,11 +643,11 @@ class TLSTM_s(TLSTM):
 
         return
 
-    def _recurrent(self, relation_pair, h_tm1, c_tm1):
+    def _recurrent(self, idx, h_tm1, c_tm1, r):
         """
         """
-        c = relation_pair[0]
-        p = relation_pair[1]
+        c = idx
+        p = r[idx]
         x_t = self.input_var[c]
         h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
         c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
@@ -702,27 +704,33 @@ class TLSTM_f(TLSTM):
                                              name='TLSTMf_D_c')
 
         self.dt = T.fmatrix('dt')
+        self.yt = T.fvector('yt')
+        self.yt_pred = T.fvector('yt_pred')
+        self.if_train_var = T.scalar('if_train')
         self.params += [self.D_i, self.D_f, self.D_o, self.D_c]
         return
 
-    def _recurrent(self, relation_pair, h_tm1, c_tm1):
+    def _recurrent(self, idx, h_tm1, c_tm1, yt_tm1, r, if_train):
         """
         """
-        c = relation_pair[0]
-        p = relation_pair[1]
+        c = idx
+        p = r[idx]
         x_t = self.input_var[c]
         h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
         c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
-        d_p = self.dt[c]
+
+        d_p = T.switch(if_train,
+                       T.concatenate(self.dt[c], self.yt[p+1]),
+                       T.concatenate(self.dt[c], self.yt_pred[p+1]))
+
+        d_p = T.concatenate(self.dt[c], yt_tm1)
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
-#                             T.dot(c_p, self.P_i) + \
                              T.dot(d_p, self.D_i) + \
                              self.b_i)
         f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
                              T.dot(h_p, self.U_f) + \
- #                            T.dot(c_p, self.P_f) + \
                              T.dot(d_p, self.D_f) + \
                              self.b_f)
         # c candiate
@@ -737,11 +745,53 @@ class TLSTM_f(TLSTM):
                              T.dot(d_p, self.D_o) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
-
+        y_t = T.dot(h_t, self.TW_output) + self.b_y
         h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
         c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
-        y_t = T.dot(h_t, self.TW_output) + self.b_y
+        self.yt_pred[c+1] = T.argmax(T.nnet.softmax(y_t))
         return h_next, c_next, y_t
+
+    def build_network(self):
+        [self.h, self.c, self.y], _ = theano.scan(fn=self._recurrent,
+                                                  sequences=T.arange(self.relations.shape[0]),
+                                                  non_sequences=[self.relations, self.if_train_var],
+                                                  outputs_info=[self.th, self.tc, None])
+        return
+
+
+class TLSTM_fc(TLSTM):
+    """
+    TLSTM with feature cell.
+    more strong version than TLSTM-f
+    """
+    def __init__(self,
+                 input_var,
+                 n_input,
+                 n_hidden,
+                 n_output):
+        TLSTM.__init__(self,
+                       input_var,
+                       n_input,
+                       n_hidden,
+                       n_output)
+        self.dt = T.fmatrix('d_t')
+
+        # addtional params
+        self.W_v = utils.shared_orthogonal((n_input, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTM_W_v")
+        self.U_v = utils.shared_orthogonal((n_hidden, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTM_U_v")
+        self.D_v = utils.shared_orthogonal((config.options['dfeature_len'],
+                                            n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTM_D_v")
+        self.b_v = utils.shared_zeros((n_hidden,),
+                                      dtype=theano.config.floatX,
+                                      name='TLSTM_b_v')
+        self.params.append(self.W_v, self.U_v, self.D_v, self.b_v)
+        return
 
 
 

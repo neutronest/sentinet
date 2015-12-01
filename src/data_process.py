@@ -340,26 +340,29 @@ def generate_threadsV2(file_path,
             grandpa = content_dict[threadid][parent]['parent'] if parent != -1 else -1
 
             # features
-            d_polarity = generate_feature(content_dict[threadid], "label", label, parent, grandpa, "equal")
+            #d_polarity = generate_feature(content_dict[threadid], "label", label, parent, grandpa, "equal")
             d_author = generate_feature(content_dict[threadid], "author", author, parent, grandpa, "equal")
             d_emoji = generate_feature(content_dict[threadid], "emoji", emoji, parent, grandpa, "contain")
             d_hashtag = generate_feature(content_dict[threadid], "hashtag", hashtag, parent, grandpa, "contain")
             d_mention = generate_feature(content_dict[threadid], "mention", mention, parent, grandpa, "contain")
-            d_t = d_polarity + d_author + d_emoji + d_hashtag + d_mention
+            d_t = d_author + d_emoji + d_hashtag + d_mention
             # applying data
             if data_x.get(threadid) == None:
                 # new thread
                 max_len = len(words_ids)
-                relation_seq = [docid, parent]
+                #relation_seq = [docid, parent]
+                # TODO: change relation encoding!
+                # in relation seq, add empty node as guard node
+                relation_seq = [0]
                 mask = [1] * len(words_ids)
-                data_x[threadid] = [[words_ids], max_len, [mask],  [relation_seq], [d_t]]
+                data_x[threadid] = [[words_ids], max_len, [mask],  relation_seq, [d_t]]
             else:
                 data_x[threadid][0].append(words_ids)
                 max_len = len(words_ids) if max_len < len(words_ids) else max_len
                 mask = [1] * len(words_ids)
                 data_x[threadid][1] = max_len
                 data_x[threadid][2].append(mask)
-                data_x[threadid][3].append([docid, parent])
+                data_x[threadid][3].append(parent)
                 data_x[threadid][4].append(d_t)
             if data_y.get(threadid) == None:
                 data_y[threadid] = [label]

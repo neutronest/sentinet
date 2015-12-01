@@ -214,6 +214,9 @@ def test_13():
     x_new = T.flatten(x_var)
     fn = theano.function(inputs=[x_var],
                          outputs=x_new)
+    theano.printing.pydotprint(fn,
+                               outfile="../src/pics/test13.png",
+                               var_with_name_simple=True)
     x = np.asarray([[1,2,3],[4,5,6]],
                    dtype=theano.config.floatX)
     res = fn(x)
@@ -231,6 +234,30 @@ def test_14():
     # TODO
     return
 
+def test_15():
+
+    relations = [-1, 0, 0, 1, 3]
+    if_train = 0
+
+    if_train_var = T.scalar('if_train')
+    relations_var = T.ivector('r')
+
+
+    def _recurrent(idx, r, if_train):
+
+        c = T.switch(if_train, idx, 0)
+        pa = r[idx]
+        gr = r[r[idx]]
+
+        return (c, pa, gr)
+    res_var, _ = theano.scan(fn=_recurrent,
+                             sequences=T.arange(relations_var.shape[0]),
+                             non_sequences=[relations_var, if_train_var])
+    res_fn = theano.function(inputs=[relations_var, if_train_var],
+                             outputs=res_var)
+    res = res_fn(relations, if_train)
+    print res
+    return
 
 
 if __name__ == "__main__":
@@ -240,4 +267,4 @@ if __name__ == "__main__":
     #test_sth()
     #test_4()
     #test_10()
-    test_14()
+    test_15()

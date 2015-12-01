@@ -110,7 +110,7 @@ class Model(object):
         self.output_layer = layer.OutputLayer(n_output,
                                               self.tmodel.y,
                                               if_dropout)
-        self.relation_pairs = self.tmodel.relation_pairs
+        self.relations = self.tmodel.relations
 
         self.mask = self.smodel.mask
         self.h0 = self.smodel.h0
@@ -121,8 +121,12 @@ class Model(object):
                   else T.fvector('tc')
         self.dt = self.tmodel.dt if self.tmodel.dt is not None \
                   else T.fvector('dt')
-
-
+        self.yt = self.tmodel.yt if self.tmodel.yt is not None \
+                  else T.ivector('yt')
+        self.yt_pred = self.tmodel.yt_pred if self.tmodel.yt_pred is not None \
+                       else T.ivector('yt_pred')
+        self.if_train_var = self.tmodel.if_train_var if self.tmodel.if_train_var is not None \
+                            else T.scalar('if_train_var')
         self.y_pred = self.output_layer.y_pred
         self.y_drop_pred = self.output_layer.y_drop_pred
         self.output = self.output_layer.output
