@@ -387,16 +387,16 @@ def run_microblog_experimentV2(load_data,
                                   compute_error_fn,
                                   "valid")
                     valid_idx += 1
-            """  TEST PROCESS """
-            logging.info("[TEST PROCESS]")
-            check_process(test_idx,
-                          model,
-                          test_x,
-                          test_y,
-                          compute_loss_fn,
-                          compute_error_fn,
-                          "test")
-            test_idx += 1
+                    """  TEST PROCESS """
+                    logging.info("[TEST PROCESS]")
+                    check_process(test_idx,
+                                  model,
+                                  test_x,
+                                  test_y,
+                                  compute_loss_fn,
+                                  compute_error_fn,
+                                  "test")
+                    test_idx += 1
     return
 
 if __name__ == "__main__":
