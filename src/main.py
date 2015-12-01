@@ -295,6 +295,9 @@ def run_microblog_experimentV2(load_data,
         train_error_sum = 0
         sen_num = 0
         polarity_train_n = [0, 0, 0]
+        early_stopping_val = 999
+        valid_check_list = []
+
         logging.info("=== Begin to Train! ===")
         while epoch < n_epochs:
             logging.info("[===== EPOCH %d BEGIN! =====]" %(epoch))
@@ -379,13 +382,22 @@ def run_microblog_experimentV2(load_data,
                     # valid process
                     print "bagan to valid %d"%(valid_idx)
                     logging.info("[VALID PROCESS]")
-                    check_process(valid_idx,
-                                  model,
-                                  valid_x,
-                                  valid_y,
-                                  compute_loss_fn,
-                                  compute_error_fn,
-                                  "valid")
+                    (loss_res, error_res) = check_process(valid_idx,
+                                                          model,
+                                                          valid_x,
+                                                          valid_y,
+                                                          compute_loss_fn,
+                                                          compute_error_fn,
+                                                          "valid")
+                    valid_check_list.append(loss_res)
+                    if len(valid_check_list) == 20:
+                        min_loss = min(valid_check_list)
+                        if early_stopping_val >= min_loss:
+                            early_stopping_val = min_loss
+                            valid_check_list = []
+                        else:
+                            logging.info("[=== early stopping! ===]")
+                            return
                     valid_idx += 1
                     """  TEST PROCESS """
                     logging.info("[TEST PROCESS]")
