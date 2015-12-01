@@ -260,10 +260,10 @@ def run_microblog_experimentV2(load_data,
 
         fn_loss_vars = [model.input_var, y_true_var, model.mask, model.h0,
                        model.c0, model.relations, model.th, model.tc,
-                       model.dt, model.yt, model.yt_pred, model.if_train]
+                        model.dt, model.yt, model.yt_pred, model.if_train_var]
         fn_error_vars = [model.input_var, y_label_var, model.mask, model.h0,
                        model.c0, model.relations, model.th, model.tc,
-                       model.dt, model.yt, model.yt_pred, model.if_train]
+                         model.dt, model.yt, model.yt_pred, model.if_train_var]
 
         compute_gparams_fn = theano.function(inputs=fn_loss_vars,
                                              outputs=gparams_var_list,

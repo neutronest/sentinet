@@ -111,22 +111,17 @@ class Model(object):
                                               self.tmodel.y,
                                               if_dropout)
         self.relations = self.tmodel.relations
-
         self.mask = self.smodel.mask
+        #pdb.set_trace()
         self.h0 = self.smodel.h0
         self.th = self.tmodel.th
-        self.c0 = self.smodel.c0 if self.smodel.c0 is not None \
-                  else T.fmatrix('c0')
-        self.tc = self.tmodel.tc if self.tmodel.tc is not None \
-                  else T.fvector('tc')
-        self.dt = self.tmodel.dt if self.tmodel.dt is not None \
-                  else T.fvector('dt')
-        self.yt = self.tmodel.yt if self.tmodel.yt is not None \
-                  else T.ivector('yt')
-        self.yt_pred = self.tmodel.yt_pred if self.tmodel.yt_pred is not None \
-                       else T.ivector('yt_pred')
-        self.if_train_var = self.tmodel.if_train_var if self.tmodel.if_train_var is not None \
-                            else T.scalar('if_train_var')
+        self.c0  = getattr(self.smodel, 'c0', T.fmatrix('c0'))
+        self.tc = getattr(self.tmodel, 'tc', T.fvector('tc'))
+        self.dt = getattr(self.tmodel, 'dt', T.fvector('dt'))
+        self.yt = getattr(self.tmodel, 'yt', T.ivector('yt'))
+        self.yt_pred = getattr(self.tmodel, 'yt_pred', T.ivector('yt_pred'))
+        self.if_train_var = getattr(self.tmodel, 'if_train_var', T.scalar('if_train_var'))
+
         self.y_pred = self.output_layer.y_pred
         self.y_drop_pred = self.output_layer.y_drop_pred
         self.output = self.output_layer.output

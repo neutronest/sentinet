@@ -793,6 +793,12 @@ class TLSTM_fc(TLSTM):
         self.params.append(self.W_v, self.U_v, self.D_v, self.b_v)
         return
 
+    def _recurrent(self, idx, h_tm1, c_tm1, yt_tm1, r, if_train):
+
+        c = idx
+        p = r[idx]
+
+        return
 
 
 class LSTM(SLSTM):
