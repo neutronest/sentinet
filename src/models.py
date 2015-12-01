@@ -170,9 +170,14 @@ class SingleModel(object):
                                       n_output)
         self.h0 = self.model.h0
         self.c0 = self.model.c0
-            # not used
+        # not used
         self.th = T.fvector('th')
         self.tc = T.fvector('tc')
+        self.dt = T.fmatrix('dt')
+        self.yt = T.ivector('yt')
+        self.yt_pred = T.ivector('yt_pred')
+        self.if_train_var = T.scalar('if_train_var')
+
         self.relations = T.imatrix('relations')
         self.level1_hidden = self.model.n_hidden
         self.level2_hidden = 1
