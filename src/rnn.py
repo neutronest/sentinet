@@ -88,7 +88,7 @@ class TRNN(object):
         """
         #RNN.__init__(self, input_var, n_input, n_hidden, n_output)
         self.input_var = input_var
-        self.relation_pairs = T.imatrix('relation_pairs')
+        self.relations = T.imatrix('relations')
         self.n_input = n_input
         self.n_hidden = n_hidden
         self.n_output = n_output
@@ -123,8 +123,8 @@ class TRNN(object):
         so that we must add one element that start with 1:0
         """
 
-        c = relation_pair[0]
-        p = relation_pair[1]
+        c = relations[0]
+        p = relations[1]
 
         #h_t = T.nnet.sigmoid(T.dot(self.input_var[c], self.TW_input) + \
         #                     T.dot(hlist_tm1[p+1], self.TW_hidden) + \

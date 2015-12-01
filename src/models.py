@@ -173,7 +173,7 @@ class SingleModel(object):
             # not used
         self.th = T.fvector('th')
         self.tc = T.fvector('tc')
-        self.relation_pairs = T.imatrix('relation_pairs')
+        self.relations = T.imatrix('relations')
         self.level1_hidden = self.model.n_hidden
         self.level2_hidden = 1
         self.model.build_network()
