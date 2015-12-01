@@ -165,7 +165,7 @@ def check_process(check_idx,
         tc_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
                                       dtype=theano.config.floatX))
         dt = np.asarray(check_item_x[4], dtype=theano.config.floatX)
-        yt = np.asarray([0, 0, 0] + \
+        yt = np.asarray([[0, 0, 0]] + \
                         [[1 if i == y else 0 for i in xrange(3)]  for y in check_item_y],
                         dtype=theano.config.floatX)
         yt_pred = np.asarray(np.zeros_like(yt),
@@ -337,7 +337,7 @@ def run_microblog_experimentV2(load_data,
                                               dtype=theano.config.floatX))
                 dt = np.asarray(train_item_x[4],
                                 dtype=theano.config.floatX)
-                yt = np.asarray([0, 0, 0] + \
+                yt = np.asarray([[0, 0, 0]] + \
                                 [[1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
                                 dtype=theano.config.floatX)
                 yt_pred = np.asarray(np.zeros_like(yt),

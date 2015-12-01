@@ -810,7 +810,7 @@ class TLSTM_fc(TLSTM):
         self.params.append(self.W_v, self.U_v, self.D_v, self.b_v, self.W_dc)
         return
 
-    def _recurrent(self, idx, h_tm1, c_tm1, r, if_train):
+    def _recurrent(self, idx, h_tm1, c_tm1, yt_pred, r, if_train):
 
         c = idx
         p = r[idx]
@@ -821,7 +821,7 @@ class TLSTM_fc(TLSTM):
         d_tm1 = self.dt[p]
         y_p = T.switch(if_train,
                        self.yt[p+1],
-                       self.yt_pred[p+1])
+                       yt_pred[p+1])
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
@@ -848,14 +848,14 @@ class TLSTM_fc(TLSTM):
         y_t = T.dot(h_t, self.TW_output) + self.b_y
         h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
         c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
-        self.yt_pred[c+1] = T.argmax(T.nnet.softmax(y_t))
-        return h_next, c_next, y_t
+        yt_next = T.set_subtensor(yt_pred[c+1], y_t)
+        return h_next, c_next, yt_next, y_t
 
     def build_network(self):
-        [h_next, c_next, self.y], _ = theano.scan(fn=self._recurrent,
+        [_, _, _, self.y], _ = theano.scan(fn=self._recurrent,
                                                   sequences=T.arange(self.relations.shape[0]),
                                                   non_sequences=[self.relations, self.if_train_var],
-                                                  outputs_info=[self.th, self.tc, None])
+                                                  outputs_info=[self.th, self.tc, self.yt_pred, None])
         return
 
 
