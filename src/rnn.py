@@ -750,7 +750,7 @@ class TLSTM_f(TLSTM):
         c_t = i_t * c_c + f_t * c_p
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_p, self.U_o) + \
-                             T.dot(d_p, self.D_o) + \
+                             T.dot(d_p, self.D_o[:-1, :]) + \
                              T.dot(y_p, self.D_o[-1,:]) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
