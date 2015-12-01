@@ -703,6 +703,8 @@ class TLSTM_f(TLSTM):
                                              dtype=theano.config.floatX,
                                              name='TLSTMf_D_c')
 
+
+
         self.dt = T.fmatrix('dt')
         self.yt = T.fvector('yt')
         self.yt_pred = T.fvector('yt_pred')
@@ -710,50 +712,60 @@ class TLSTM_f(TLSTM):
         self.params += [self.D_i, self.D_f, self.D_o, self.D_c]
         return
 
-    def _recurrent(self, idx, h_tm1, c_tm1, yt_tm1, r, if_train):
+    def _recurrent(self, idx, r, if_train):
         """
         """
         c = idx
         p = r[idx]
         x_t = self.input_var[c]
-        h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
-        c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
-
+        h_p = self.th[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+        c_p = self.tc[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
+        d_p = self.dt[c]
+        """
         d_p = T.switch(if_train,
-                       T.concatenate(self.dt[c], self.yt[p+1]),
-                       T.concatenate(self.dt[c], self.yt_pred[p+1]))
+                       T.concatenate([self.dt[c], self.yt[p+1]]),
+                       T.concatenate([self.dt[c], self.yt_pred[p+1]]))
+        """
+        y_p = T.switch(if_train,
+                       self.yt[p+1],
+                       self.yt_pred[p+1])
+
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
-                             T.dot(d_p, self.D_i) + \
+                             T.dot(d_p, self.D_i[:-1, :]) + \
+                             T.dot(y_p, self.D_i[-1,:]) + \
                              self.b_i)
         f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
                              T.dot(h_p, self.U_f) + \
-                             T.dot(d_p, self.D_f) + \
+                             T.dot(d_p, self.D_f[:-1, :]) + \
+                             T.dot(y_p, self.D_f[-1,:]) + \
                              self.b_f)
         # c candiate
         c_c = T.tanh(T.dot(x_t, self.W_c) + \
                      T.dot(h_p, self.U_c) + \
-                     T.dot(d_p, self.D_c) + \
+                     T.dot(d_p, self.D_c[:-1, :]) + \
+                     T.dot(y_p, self.D_c[-1, :]) + \
                      self.b_c)
         c_t = i_t * c_c + f_t * c_p
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_p, self.U_o) + \
-#                             T.dot(c_t, self.P_o) + \
                              T.dot(d_p, self.D_o) + \
+                             T.dot(y_p, self.D_o[-1,:]) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
         y_t = T.dot(h_t, self.TW_output) + self.b_y
-        h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
-        c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
-        self.yt_pred[c+1] = T.argmax(T.nnet.softmax(y_t))
-        return h_next, c_next
+        self.th = T.set_subtensor(self.th[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
+        self.tc = T.set_subtensor(self.tc[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
+        self.yt_pred = T.set_subtensor(self.yt_pred[c+1], T.argmax(T.nnet.softmax(y_t)))
+        #self.yt_pred[c+1] = T.argmax(T.nnet.softmax(y_t))
+        return y_t
 
     def build_network(self):
-        [self.h, self.c, self.y], _ = theano.scan(fn=self._recurrent,
-                                                  sequences=T.arange(self.relations.shape[0]),
-                                                  non_sequences=[self.relations, self.if_train_var],
-                                                  outputs_info=[self.th, self.tc, None])
+        self.y, _ = theano.scan(fn=self._recurrent,
+                                sequences=T.arange(self.relations.shape[0]),
+                                non_sequences=[self.relations, self.if_train_var],
+                                outputs_info=None)
         return
 
 
@@ -797,7 +809,7 @@ class TLSTM_fc(TLSTM):
         self.params.append(self.W_v, self.U_v, self.D_v, self.b_v, self.W_dc)
         return
 
-    def _recurrent(self, idx, h_tm1, c_tm1, yt_tm1, r, if_train):
+    def _recurrent(self, idx, h_tm1, c_tm1, r, if_train):
 
         c = idx
         p = r[idx]
@@ -806,11 +818,11 @@ class TLSTM_fc(TLSTM):
         c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
 
         d_p = T.switch(if_train,
-                       T.concatenate(self.dt[c], self.yt[p+1]),
-                       T.concatenate(self.dt[c], self.yt_pred[p+1]))
+                       T.concatenate([self.dt[c], self.yt[p+1]]),
+                       T.concatenate([self.dt[c], self.yt_pred[p+1]]))
         d_tm1 = T.swtich(if_train,
-                         T.concatenate(self.dt[p], self.yt[r[p]+1]),
-                         T.concatenate(self.dt[p], self.yt_pred[r[p]+1]))
+                         T.concatenate([self.dt[p], self.yt[r[p]+1]]),
+                         T.concatenate([self.dt[p], self.yt_pred[r[p]+1]]))
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \

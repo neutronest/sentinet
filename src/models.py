@@ -128,7 +128,6 @@ class Model(object):
         self.loss = self.output_layer.loss
         self.error = self.output_layer.error
         self.params = self.smodel.params + self.tmodel.params
-        self.params.append(self.lookup_table)
 
         # prepare L2_sqr
         self.L2 = 0
