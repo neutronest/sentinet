@@ -294,13 +294,13 @@ def run_microblog_experimentV2(load_data,
                                               dtype=theano.config.floatX))
                 dt = np.asarray(train_item_x[4],
                                 dtype=theano.config.floatX)
-                """
+
                 yt = np.asarray([[0, 0, 0]] + \
                                 [[1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
                                 dtype=theano.config.floatX)
                 yt_pred = np.asarray(np.zeros_like(yt),
                                      dtype=theano.config.floatX)
-                """
+
                 (g, train_loss, train_error, y) = train_process(model_name,
                                                                 compute_gparams_fn,
                                                                 train_loss_fn,
@@ -314,10 +314,10 @@ def run_microblog_experimentV2(load_data,
                                                                 relations,
                                                                 th_init,
                                                                 tc_init,
-                                                                dt)
-                                                                #yt,
-                                                                #yt_pred,
-                                                                #1)
+                                                                dt,
+                                                                yt,
+                                                                yt_pred,
+                                                                1)
                 opt.gparams_update(g)
                 # endif
                 train_loss /= len(relations)
