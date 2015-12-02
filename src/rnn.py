@@ -872,7 +872,7 @@ class TLSTM_fc(TLSTM):
         self.W_dc = utils.shared_orthogonal((config.options['dfeature_len'],
                                              n_hidden),
                                             dtype=theano.config.floatX)
-        self.params.append(self.W_v, self.U_v, self.b_v, self.W_dc)
+        self.params += [self.W_v, self.U_v, self.b_v, self.W_dc]
         return
 
     def _recurrent(self, idx, h_tm1, c_tm1, r):
