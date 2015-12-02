@@ -57,6 +57,12 @@ class MVectorize(object):
         """ TRICKS!!! """
         return words_doc
 
+    def addtional_corpus(self, file_path):
+        """
+        """
+        return
+
+
     def gen_words_vector(self, file_path):
         """
         """
