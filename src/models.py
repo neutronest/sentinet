@@ -128,8 +128,8 @@ class Model(object):
         self.c0  = getattr(self.smodel, 'c0', T.fmatrix('c0'))
         self.tc = getattr(self.tmodel, 'tc', T.fvector('tc'))
         self.dt = getattr(self.tmodel, 'dt', T.fmatrix('dt'))
-        self.yt = getattr(self.tmodel, 'yt', T.imatrix('yt'))
-        self.yt_pred = getattr(self.tmodel, 'yt_pred', T.imatrix('yt_pred'))
+        self.yt = getattr(self.tmodel, 'yt', T.fmatrix('yt'))
+        self.yt_pred = getattr(self.tmodel, 'yt_pred', T.fmatrix('yt_pred'))
         self.if_train_var = getattr(self.tmodel, 'if_train_var', T.scalar('if_train_var'))
 
         self.y_pred = self.output_layer.y_pred
@@ -183,8 +183,8 @@ class SingleModel(object):
         self.th = T.fvector('th')
         self.tc = T.fvector('tc')
         self.dt = T.fmatrix('dt')
-        self.yt = T.ivector('yt')
-        self.yt_pred = T.ivector('yt_pred')
+        self.yt = T.fmatrix('yt')
+        self.yt_pred = T.fmatrix('yt_pred')
         self.if_train_var = T.scalar('if_train_var')
 
         self.relations = T.ivector('relations')

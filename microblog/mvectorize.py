@@ -57,20 +57,39 @@ class MVectorize(object):
         """ TRICKS!!! """
         return words_doc
 
-    def addtional_corpus(self, file_path):
+    def get_additional_corpus(self, file_path):
         """
         """
-        return
-
+        addition_words_doc = []
+        text_filters = []
+        with open(file_path, "r") as file_ob:
+            for line in file_ob:
+                # line format:
+                # line split: \t
+                # mid date text source ..
+                line_arr = line.split("\t")
+                text = line_arr[2].strip()
+                text_filter = ""
+                emoji_list, text_filter = word_cutting.filter_emoji_from_textV2(text)
+                mention_list, text_filter = word_cutting.filter_syntax_from_textV2(text_filter, '@')
+                hashtag_list, text_filter = word_cutting.filter_syntax_from_textV2(text_filter, '#')
+                text_filters.append(text_filter)
+        file_ob.close()
+        for text in text_filters:
+            words = word_cutting.cut_directly(text)
+            addition_words_doc.append(words)
+        return addition_words_doc
 
     def gen_words_vector(self, file_path):
         """
         """
         words_doc = self.gen_words(file_path)
-        words_num = len([w for words in words_doc for w in words])
+        additional_words_doc = self.get_additional_corpus("../data/weibo_pretrain.tsv")
+        all_words_doc = words_doc + additional_words_doc
+        words_num = len([w for words in all_words_doc for w in words])
         print "[---the words_num of model is %d---]"%(words_num)
         print "[---generate word vectors model!---]"
-        self.words_model = Word2Vec(words_doc, size=config.options['word_dim'], window=10, min_count=1, workers=4)
+        self.words_model = Word2Vec(all_words_doc, size=config.options['word_dim'], window=10, min_count=1, workers=4)
         print "[--- word embedding model Done! ---]"
         return
 
