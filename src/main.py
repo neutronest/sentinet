@@ -14,63 +14,16 @@ from collections import OrderedDict
 import utils
 from theano import ProfileMode
 
+def train_process(model_name, gparams_fn, loss_fn, error_fn, data_x, data_y,
+                  label_y, mask, h0, c0, relations, th_init=None, tc_init=None,
+                  dt=None, yt=None, yt_pred=None, if_train=None):
 
-theano.config.exception_verbosity='high'
-
-def train_process(model_name,
-                  gparams_fn,
-                  loss_fn,
-                  error_fn,
-                  data_x,
-                  data_y,
-                  label_y,
-                  mask,
-                  h0,
-                  c0,
-                  relations,
-                  th_init=None,
-                  tc_init=None,
-                  dt=None):
-                  #yt=None,
-                  #yt_pred=None,
-                  #if_train=None):
-
-    g = gparams_fn(data_x,
-                   data_y,
-                   mask,
-                   h0,
-                   c0,
-                   relations,
-                   th_init,
-                   tc_init,
-                   dt)
-                   #yt,
-                   #yt_pred,
-                   #1)
-    [train_loss, y] = loss_fn(data_x,
-                              data_y,
-                              mask,
-                              h0,
-                              c0,
-                              relations,
-                              th_init,
-                              tc_init,
-                              dt)
-                              #yt,
-                              #yt_pred,
-                              #0)
-    [train_error, y] = error_fn(data_x,
-                                label_y,
-                                mask,
-                                h0,
-                                c0,
-                                relations,
-                                th_init,
-                                tc_init,
-                                dt)
-                                #yt,
-                                #yt_pred,
-                                #0)
+    g = gparams_fn(data_x, data_y, mask, h0, c0, relations, th_init, tc_init,
+                   dt, yt, yt_pred, 1)
+    [train_loss, y] = loss_fn(data_x, data_y, mask, h0, c0, relations, th_init,
+                              tc_init, dt, yt, yt_pred, 0)
+    [train_error, y] = error_fn(data_x, label_y, mask, h0, c0, relations,
+                                th_init, tc_init, dt, yt, yt_pred, 0)
     return (g, train_loss, train_error, y)
 
 def check_compute(model_name,
@@ -98,10 +51,10 @@ def check_compute(model_name,
                                          relations,
                                          th_init,
                                          tc_init,
-                                         dt)
-                                         #yt,
-                                         #yt_pred,
-                                        # 0)
+                                         dt,
+                                         yt,
+                                         yt_pred,
+                                         0)
     [check_error, check_output] = error_fn(data_x,
                                            label_y,
                                            mask,
@@ -110,10 +63,10 @@ def check_compute(model_name,
                                            relations,
                                            th_init,
                                            tc_init,
-                                           dt)
-                                           #yt,
-                                           #yt_pred,
-                                           #0)
+                                           dt,
+                                           yt,
+                                           yt_pred,
+                                           0)
 
     return (check_loss, check_error, check_output)
 
@@ -166,13 +119,13 @@ def check_process(check_idx,
                                       dtype=theano.config.floatX))
         dt = np.asarray(check_item_x[4], dtype=theano.config.floatX)
 
-        """
+
         yt = np.asarray([[0, 0, 0]] + \
                         [[1 if i == y else 0 for i in xrange(3)]  for y in check_item_y],
                         dtype=theano.config.floatX)
         yt_pred = np.asarray(np.zeros_like(yt),
                              dtype=theano.config.floatX)
-        """
+
         (check_loss, check_error, check_output) = check_compute(model_name,
                                                                 loss_fn,
                                                                 error_fn,
@@ -185,7 +138,10 @@ def check_process(check_idx,
                                                                 relations,
                                                                 th_init,
                                                                 tc_init,
-                                                                dt)
+                                                                dt,
+                                                                yt,
+                                                                yt_pred,
+                                                                0)
         for p in check_output:
             polarity_n[p] += 1
         check_loss_sum += (check_loss / len(relations))
@@ -240,7 +196,8 @@ def run_microblog_experimentV2(load_data,
        or model_name == "lstm_model" \
        or model_name == "lstm_avg_model" \
        or model_name == "hlstm_s_model" \
-       or model_name == "hlstm_fc_model":
+       or model_name == "hlstm_fc_model" \
+       or model_name == "hlstm_fy_model":
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
@@ -250,7 +207,6 @@ def run_microblog_experimentV2(load_data,
         cost_var = model.loss(y_true_var, model.y_pred)
         error_var = model.error(y_label_var, model.output)
 
-        #theano.printing.pydotprint(cost_var, outfile="./graph.png", var_with_name_simple=True)
         # optimizer define
         logging.info("[minibatch used]")
         logging.info("[optimizer %s define!]"%(optimizer_method))
@@ -264,11 +220,11 @@ def run_microblog_experimentV2(load_data,
 
 
         fn_loss_vars = [model.input_var, y_true_var, model.mask, model.h0,
-                       model.c0, model.relations, model.th, model.tc, model.dt]
-                       # model.dt, model.yt, model.yt_pred, model.if_train_var]
+                        model.c0, model.relations, model.th, model.tc, model.dt,
+                        model.yt, model.yt_pred, model.if_train_var]
         fn_error_vars = [model.input_var, y_label_var, model.mask, model.h0,
-                       model.c0, model.relations, model.th, model.tc, model.dt]
-                        # model.dt, model.yt, model.yt_pred, model.if_train_var]
+                         model.c0, model.relations, model.th, model.tc, model.dt,
+                         model.yt, model.yt_pred, model.if_train_var]
 
         compute_gparams_fn = theano.function(inputs=fn_loss_vars,
                                              outputs=gparams_var_list,

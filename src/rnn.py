@@ -741,40 +741,38 @@ class TLSTM_f(TLSTM):
         return h_next, c_next, y_t
 
 
-class TLSTM_fy(TLSTM):
+class TLSTM_fy(TLSTM_f):
 
     def __init__(self,
                  input_var,
                  n_input,
                  n_hidden,
                  n_output):
-        TLSTM.__init__(self,
-                       input_var,
-                       n_input,
-                       n_hidden,
-                       n_output)
+        TLSTM_f.__init__(self,
+                         input_var,
+                         n_input,
+                         n_hidden,
+                         n_output)
 
-        self.D_i = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
-                                             dtype=theano.config.floatX,
-                                             name='TLSTMf_D_i')
-        self.D_f = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
-                                             dtype=theano.config.floatX,
-                                             name='TLSTMf_D_f')
-        self.D_o = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
-                                             dtype=theano.config.floatX,
-                                             name='TLSTMf_D_o')
-        self.D_c = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
-                                             dtype=theano.config.floatX,
-                                             name='TLSTMf_D_c')
+        self.Y_i = utils.shared_orthogonal((n_output, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTMfy_Y_i")
+        self.Y_f = utils.shared_orthogonal((n_output, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTMfy_Y_f")
+        self.Y_o = utils.shared_orthogonal((n_output, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTMfy_Y_o")
 
-
+        self.Y_c = utils.shared_orthogonal((n_output, n_hidden),
+                                           dtype=theano.config.floatX,
+                                           name="TLSTMfy_Y_c")
 
         self.dt = T.fmatrix('dt')
         self.yt = T.fmatrix('yt')
         self.yt_pred = T.fmatrix('yt_pred')
-
         self.if_train_var = T.scalar('if_train')
-        self.params += [self.D_i, self.D_f, self.D_o, self.D_c]
+        self.params += [self.Y_i, self.Y_f, self.Y_o, self.Y_c]
         return
 
     def _recurrent(self, idx, h_tm1, c_tm1, yt_pred, r, if_train):
@@ -786,37 +784,30 @@ class TLSTM_fy(TLSTM):
         h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
         c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
         d_p = self.dt[c]
-        """
-        d_p = T.switch(if_train,
-                       T.concatenate([self.dt[c], self.yt[p+1]]),
-                       T.concatenate([self.dt[c], self.yt_pred[p+1]]))
-        """
-        y_p = T.switch(if_train,
-                       self.yt[p+1],
-                       yt_pred[p+1])
-
-
+        y_p  = T.switch(if_train,
+                        self.yt[p+1],
+                        yt_pred[p+1])
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
-                             T.dot(d_p, self.D_i[:-1, :]) + \
-                             T.dot(y_p, self.D_i[-1,:]) + \
+                             T.dot(d_p, self.D_i) + \
+                             T.dot(y_p, self.Y_i) + \
                              self.b_i)
         f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
                              T.dot(h_p, self.U_f) + \
-                             T.dot(d_p, self.D_f[:-1, :]) + \
-                             T.dot(y_p, self.D_f[-1,:]) + \
+                             T.dot(d_p, self.D_f) + \
+                             T.dot(y_p, self.Y_f) + \
                              self.b_f)
         # c candiate
         c_c = T.tanh(T.dot(x_t, self.W_c) + \
                      T.dot(h_p, self.U_c) + \
-                     T.dot(d_p, self.D_c[:-1, :]) + \
-                     T.dot(y_p, self.D_c[-1, :]) + \
+                     T.dot(d_p, self.D_c) + \
+                     T.dot(y_p, self.Y_c) + \
                      self.b_c)
         c_t = i_t * c_c + f_t * c_p
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_p, self.U_o) + \
-                             T.dot(d_p, self.D_o[:-1, :]) + \
-                             T.dot(y_p, self.D_o[-1,:]) + \
+                             T.dot(d_p, self.D_o) + \
+                             T.dot(y_p, self.Y_o) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
         y_t = T.dot(h_t, self.TW_output) + self.b_y

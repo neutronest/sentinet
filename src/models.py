@@ -107,6 +107,11 @@ class Model(object):
                                        self.level2_input,
                                        self.level2_hidden,
                                        self.n_output)
+        elif self.level2_model_name == "tlstm_fy_model":
+            self.tmodel = rnn.TLSTM_fy(self.smodel.h,
+                                       self.level2_input,
+                                       self.level2_hidden,
+                                       self.n_output)
         else:
             print "none tmodel"
         self.tmodel.build_network()
@@ -123,8 +128,8 @@ class Model(object):
         self.c0  = getattr(self.smodel, 'c0', T.fmatrix('c0'))
         self.tc = getattr(self.tmodel, 'tc', T.fvector('tc'))
         self.dt = getattr(self.tmodel, 'dt', T.fmatrix('dt'))
-        self.yt = getattr(self.tmodel, 'yt', T.ivector('yt'))
-        self.yt_pred = getattr(self.tmodel, 'yt_pred', T.ivector('yt_pred'))
+        self.yt = getattr(self.tmodel, 'yt', T.imatrix('yt'))
+        self.yt_pred = getattr(self.tmodel, 'yt_pred', T.imatrix('yt_pred'))
         self.if_train_var = getattr(self.tmodel, 'if_train_var', T.scalar('if_train_var'))
 
         self.y_pred = self.output_layer.y_pred

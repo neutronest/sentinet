@@ -495,4 +495,38 @@ if __name__ == "__main__":
     words_table, lookup_table, wordid_acc = build_lookuptable()
     (train_x, train_y, valid_x, valid_y, test_x, test_y) \
         = load_microblogdata([0,1,2], 3, 4, words_table)
-    pdb.set_trace()
+    for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
+        zip(train_x.items(), train_y.items()):
+        assert(train_threadid_x == train_threadid_y)
+        # prepare train data
+        ids_matrix = np.asarray(train_item_x[0],
+                                dtype=np.int32)
+        # test
+        input_x = np.transpose(np.asarray(ids_matrix,
+                                             dtype=np.int32))
+        mask = np.transpose(np.asarray(train_item_x[2],
+                                       dtype=theano.config.floatX))
+        input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
+                             dtype=np.int32)
+
+        label_y = np.asarray(train_item_y,
+                             dtype=np.int32)
+        relations = np.asarray(train_item_x[3],
+                               dtype=np.int32)
+
+        h0 = np.asarray(np.zeros((len(relations), 100),
+                                 dtype=theano.config.floatX))
+        c0 = np.asarray(np.zeros((len(relations), 100),
+                                 dtype=theano.config.floatX))
+        th_init = np.asarray(np.zeros(100*(len(relations)+1),
+                                      dtype=theano.config.floatX))
+        tc_init = np.asarray(np.zeros(100*(len(relations)+1),
+                                      dtype=theano.config.floatX))
+        dt = np.asarray(train_item_x[4],
+                        dtype=theano.config.floatX)
+
+        yt = np.asarray([[0, 0, 0]] + \
+                        [[1 if i == y else 0 for i in xrange(3)]  for y in train_item_y],
+                        dtype=theano.config.floatX)
+        yt_pred = np.asarray(np.zeros_like(yt),
+                             dtype=theano.config.floatX)
