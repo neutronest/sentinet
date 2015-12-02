@@ -30,10 +30,10 @@ def train_process(model_name,
                   relations,
                   th_init=None,
                   tc_init=None,
-                  dt=None,
-                  yt=None,
-                  yt_pred=None,
-                  if_train=None):
+                  dt=None):
+                  #yt=None,
+                  #yt_pred=None,
+                  #if_train=None):
 
     g = gparams_fn(data_x,
                    data_y,
@@ -43,10 +43,10 @@ def train_process(model_name,
                    relations,
                    th_init,
                    tc_init,
-                   dt,
-                   yt,
-                   yt_pred,
-                   1)
+                   dt)
+                   #yt,
+                   #yt_pred,
+                   #1)
     [train_loss, y] = loss_fn(data_x,
                               data_y,
                               mask,
@@ -55,10 +55,10 @@ def train_process(model_name,
                               relations,
                               th_init,
                               tc_init,
-                              dt,
-                              yt,
-                              yt_pred,
-                              0)
+                              dt)
+                              #yt,
+                              #yt_pred,
+                              #0)
     [train_error, y] = error_fn(data_x,
                                 label_y,
                                 mask,
@@ -67,10 +67,10 @@ def train_process(model_name,
                                 relations,
                                 th_init,
                                 tc_init,
-                                dt,
-                                yt,
-                                yt_pred,
-                                0)
+                                dt)
+                                #yt,
+                                #yt_pred,
+                                #0)
     return (g, train_loss, train_error, y)
 
 def check_compute(model_name,
@@ -98,10 +98,10 @@ def check_compute(model_name,
                                          relations,
                                          th_init,
                                          tc_init,
-                                         dt,
-                                         yt,
-                                         yt_pred,
-                                         0)
+                                         dt)
+                                         #yt,
+                                         #yt_pred,
+                                        # 0)
     [check_error, check_output] = error_fn(data_x,
                                            label_y,
                                            mask,
@@ -110,10 +110,10 @@ def check_compute(model_name,
                                            relations,
                                            th_init,
                                            tc_init,
-                                           dt,
-                                           yt,
-                                           yt_pred,
-                                           0)
+                                           dt)
+                                           #yt,
+                                           #yt_pred,
+                                           #0)
 
     return (check_loss, check_error, check_output)
 
@@ -185,10 +185,7 @@ def check_process(check_idx,
                                                                 relations,
                                                                 th_init,
                                                                 tc_init,
-                                                                dt,
-                                                                yt,
-                                                                yt_pred,
-                                                                0)
+                                                                dt)
         for p in check_output:
             polarity_n[p] += 1
         check_loss_sum += (check_loss / len(relations))
@@ -269,8 +266,8 @@ def run_microblog_experimentV2(load_data,
                        model.c0, model.relations, model.th, model.tc,
                         model.dt, model.yt, model.yt_pred, model.if_train_var]
         fn_error_vars = [model.input_var, y_label_var, model.mask, model.h0,
-                       model.c0, model.relations, model.th, model.tc,
-                         model.dt, model.yt, model.yt_pred, model.if_train_var]
+                       model.c0, model.relations, model.th, model.tc, model.dt]
+                        # model.dt, model.yt, model.yt_pred, model.if_train_var]
 
         compute_gparams_fn = theano.function(inputs=fn_loss_vars,
                                              outputs=gparams_var_list,
@@ -360,10 +357,10 @@ def run_microblog_experimentV2(load_data,
                                                                 relations,
                                                                 th_init,
                                                                 tc_init,
-                                                                dt,
-                                                                yt,
-                                                                yt_pred,
-                                                                1)
+                                                                dt)
+                                                                #yt,
+                                                                #yt_pred,
+                                                                #1)
                 opt.gparams_update(g)
                 # endif
                 train_loss /= len(relations)
