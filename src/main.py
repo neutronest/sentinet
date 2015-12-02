@@ -240,7 +240,7 @@ def run_microblog_experimentV2(load_data,
        or model_name == "lstm_model" \
        or model_name == "lstm_avg_model" \
        or model_name == "hlstm_s_model" \
-       or mdoel_name == "hlstm_fc_model":
+       or model_name == "hlstm_fc_model":
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
@@ -264,8 +264,8 @@ def run_microblog_experimentV2(load_data,
 
 
         fn_loss_vars = [model.input_var, y_true_var, model.mask, model.h0,
-                       model.c0, model.relations, model.th, model.tc,
-                        model.dt, model.yt, model.yt_pred, model.if_train_var]
+                       model.c0, model.relations, model.th, model.tc, model.dt]
+                       # model.dt, model.yt, model.yt_pred, model.if_train_var]
         fn_error_vars = [model.input_var, y_label_var, model.mask, model.h0,
                        model.c0, model.relations, model.th, model.tc, model.dt]
                         # model.dt, model.yt, model.yt_pred, model.if_train_var]
