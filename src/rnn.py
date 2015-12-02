@@ -703,12 +703,10 @@ class TLSTM_f(TLSTM):
                                              dtype=theano.config.floatX,
                                              name='TLSTMf_D_c')
         self.dt = T.fmatrix('dt')
-
-        self.if_train_var = T.scalar('if_train')
         self.params += [self.D_i, self.D_f, self.D_o, self.D_c]
         return
 
-    def _recurrent(self, idx, h_tm1, c_tm1, yt_pred, r, if_train):
+    def _recurrent(self, idx, h_tm1, c_tm1, r):
         """
         """
         c = idx
@@ -720,22 +718,22 @@ class TLSTM_f(TLSTM):
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
-                             T.dot(d_p, self.D_i[:-1, :]) + \
+                             T.dot(d_p, self.D_i) + \
                              self.b_i)
         f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
                              T.dot(h_p, self.U_f) + \
-                             T.dot(d_p, self.D_f[:-1, :]) + \
+                             T.dot(d_p, self.D_f) + \
                              self.b_f)
         # c candiate
         c_c = T.tanh(T.dot(x_t, self.W_c) + \
                      T.dot(h_p, self.U_c) + \
-                     T.dot(d_p, self.D_c[:-1, :]) + \
-                     T.dot(y_p, self.D_c[-1, :]) + \
+                     T.dot(d_p, self.D_c) + \
+                     T.dot(y_p, self.D_c) + \
                      self.b_c)
         c_t = i_t * c_c + f_t * c_p
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_p, self.U_o) + \
-                             T.dot(d_p, self.D_o[:-1, :]) + \
+                             T.dot(d_p, self.D_o) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
         y_t = T.dot(h_t, self.TW_output) + self.b_y
