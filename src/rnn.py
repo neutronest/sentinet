@@ -872,10 +872,10 @@ class TLSTM_fc(TLSTM):
         self.W_dc = utils.shared_orthogonal((config.options['dfeature_len'],
                                              n_hidden),
                                             dtype=theano.config.floatX)
-        self.params.append(self.W_v, self.U_v, self.D_v, self.b_v, self.W_dc)
+        self.params.append(self.W_v, self.U_v, self.b_v, self.W_dc)
         return
 
-    def _recurrent(self, idx, h_tm1, c_tm1, yt_pred, r, if_train):
+    def _recurrent(self, idx, h_tm1, c_tm1, r):
 
         c = idx
         p = r[idx]
@@ -884,9 +884,6 @@ class TLSTM_fc(TLSTM):
         c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
         d_p = self.dt[c]
         d_tm1 = self.dt[p]
-        y_p = T.switch(if_train,
-                       self.yt[p+1],
-                       yt_pred[p+1])
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
@@ -903,7 +900,7 @@ class TLSTM_fc(TLSTM):
                              T.dot(h_p, self.U_v) + \
                              self.b_v)
 
-        dc_t = (1 - v_t[:-1,:]) * d_p + v_t[:-1,:] * d_tm1 + v_t[-1,:] * y_p
+        dc_t = (1 - v_t) * d_p + v_t * d_tm1
 
         c_t = i_t * c_c + f_t * c_p + T.tanh(T.dot(dc_t, self.W_dc))
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
@@ -913,17 +910,7 @@ class TLSTM_fc(TLSTM):
         y_t = T.dot(h_t, self.TW_output) + self.b_y
         h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
         c_next = T.set_subtensor(c_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], c_t)
-        yt_next = T.set_subtensor(yt_pred[c+1], y_t)
-        return h_next, c_next, yt_next, y_t
-
-    def build_network(self):
-        [_, _, _, self.y], _ = theano.scan(fn=self._recurrent,
-                                                  sequences=T.arange(self.relations.shape[0]),
-                                                  non_sequences=[self.relations, self.if_train_var],
-                                                  outputs_info=[self.th, self.tc, self.yt_pred, None])
-        return
-
-
+        return h_next, c_next, y_t
 
 class LSTM(SLSTM):
     def __init__(self,

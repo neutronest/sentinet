@@ -102,6 +102,11 @@ class Model(object):
                                       self.level2_input,
                                       self.level2_hidden,
                                       self.n_output)
+        elif self.level2_model_name == "tlstm_fc_model":
+            self.tmodel = rnn.TLSTM_fc(self.smodel.h,
+                                       self.level2_input,
+                                       self.level2_hidden,
+                                       self.n_output)
         else:
             print "none tmodel"
         self.tmodel.build_network()
