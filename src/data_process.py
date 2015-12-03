@@ -492,9 +492,16 @@ def train_sen_flatten(thread_data):
 
 
 if __name__ == "__main__":
+
+    root_same_polarity_res = 0.
+    root_same_polarity_acc = 0.
+    n_weibo = 0
+
+
     words_table, lookup_table, wordid_acc = build_lookuptable()
     (train_x, train_y, valid_x, valid_y, test_x, test_y) \
         = load_microblogdata([0,1,2], 3, 4, words_table)
+
     for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
         zip(train_x.items(), train_y.items()):
         assert(train_threadid_x == train_threadid_y)
@@ -530,3 +537,35 @@ if __name__ == "__main__":
                         dtype=theano.config.floatX)
         yt_pred = np.asarray(np.zeros_like(yt),
                              dtype=theano.config.floatX)
+
+
+    for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
+        zip(train_x.items(), train_y.items()):
+        # statistics
+        label_y = np.asarray(train_item_y,
+                             dtype=np.int32)
+        root_pol = label_y[0]
+        root_same_polarity_acc += sum([1 for y in label_y[1:] if y == root_pol])
+        print label_y, sum([1 for y in label_y[1:] if y == root_pol])
+        n_weibo += len(label_y)
+
+    for (valid_threadid_x, valid_item_x), (valid_threadid_y, valid_item_y) in \
+        zip(valid_x.items(), valid_y.items()):
+        label_y = np.asarray(valid_item_y, dtype=np.int32)
+        root_pol = label_y[0]
+        root_same_polarity_acc += sum([1 for y in label_y[1:] if y == root_pol])
+        print label_y, sum([1 for y in label_y[1:] if y == root_pol])
+        n_weibo += len(label_y)
+
+    for (test_threadid_x, test_item_x), (test_threadid_y, test_item_y) in \
+        zip(test_x.items(), test_y.items()):
+
+        label_y = np.asarray(test_item_y,
+                             dtype=np.int32)
+        root_pol = label_y[0]
+        root_same_polarity_acc += sum([1 for y in label_y[1:] if y == root_pol])
+        print label_y, sum([1 for y in label_y[1:] if y == root_pol])
+        n_weibo += len(label_y)
+
+    print n_weibo
+    print root_same_polarity_acc * 1. / n_weibo
