@@ -156,9 +156,7 @@ class SGRU(object):
                  input_var,
                  lookup_table,
                  n_input,
-                 n_hidden,
-                 sigle_mode=False,
-                 n_output=None):
+                 n_hidden):
         self.input_var = input_var
         self.lookup_table = utils.sharedX(lookup_table,
                                           dtype=theano.config.floatX,
@@ -840,9 +838,6 @@ class TLSTM_fc(TLSTM):
                        n_hidden,
                        n_output)
         self.dt = T.fmatrix('d_t')
-        self.yt = T.fvector('yt')
-        self.yt_pred = T.fvector('yt_pred')
-        self.if_train_var = T.scalar('if_train')
         # addtional params
         self.W_v = utils.shared_orthogonal((n_input, config.options['dfeature_len']),
                                            dtype=theano.config.floatX,
