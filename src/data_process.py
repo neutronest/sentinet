@@ -496,12 +496,14 @@ if __name__ == "__main__":
     root_same_polarity_res = 0.
     root_same_polarity_acc = 0.
     n_weibo = 0
+    pa_same_polarity_res = 0.
+    pa_same_polarity_acc = 0.
 
 
     words_table, lookup_table, wordid_acc = build_lookuptable()
     (train_x, train_y, valid_x, valid_y, test_x, test_y) \
         = load_microblogdata([0,1,2], 3, 4, words_table)
-
+    """
     for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
         zip(train_x.items(), train_y.items()):
         assert(train_threadid_x == train_threadid_y)
@@ -538,7 +540,7 @@ if __name__ == "__main__":
         yt_pred = np.asarray(np.zeros_like(yt),
                              dtype=theano.config.floatX)
 
-
+    """
     for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
         zip(train_x.items(), train_y.items()):
         # statistics
@@ -546,7 +548,15 @@ if __name__ == "__main__":
                              dtype=np.int32)
         root_pol = label_y[0]
         root_same_polarity_acc += sum([1 for y in label_y[1:] if y == root_pol])
-        print label_y, sum([1 for y in label_y[1:] if y == root_pol])
+        relations = train_item_x[3]
+        for i in xrange(len(relations)):
+            print relations
+            print i
+            print label_y
+            if i == 0:
+                continue
+            if label_y[i-1] == label_y[relations[i]]:
+                pa_same_polarity_acc += 1
         n_weibo += len(label_y)
 
     for (valid_threadid_x, valid_item_x), (valid_threadid_y, valid_item_y) in \
@@ -554,7 +564,13 @@ if __name__ == "__main__":
         label_y = np.asarray(valid_item_y, dtype=np.int32)
         root_pol = label_y[0]
         root_same_polarity_acc += sum([1 for y in label_y[1:] if y == root_pol])
-        print label_y, sum([1 for y in label_y[1:] if y == root_pol])
+        #print label_y, sum([1 for y in label_y[1:] if y == root_pol])
+        relations = valid_item_x[3]
+        for i in xrange(len(relations)):
+            if i == 0:
+                continue
+            if label_y[i-1] == label_y[relations[i]]:
+                pa_same_polarity_acc += 1
         n_weibo += len(label_y)
 
     for (test_threadid_x, test_item_x), (test_threadid_y, test_item_y) in \
@@ -564,8 +580,16 @@ if __name__ == "__main__":
                              dtype=np.int32)
         root_pol = label_y[0]
         root_same_polarity_acc += sum([1 for y in label_y[1:] if y == root_pol])
-        print label_y, sum([1 for y in label_y[1:] if y == root_pol])
+        #print label_y, sum([1 for y in label_y[1:] if y == root_pol])
+        relations = test_item_x[3]
+        for i in xrange(len(relations)):
+            if i == 0:
+                continue
+            if label_y[i-1] == label_y[relations[i]]:
+                pa_same_polarity_acc += 1
         n_weibo += len(label_y)
 
     print n_weibo
+    print "[=== same polarity with root weibo statistics ===]"
     print root_same_polarity_acc * 1. / n_weibo
+    print pa_same_polarity_acc * 1. / n_weibo

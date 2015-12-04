@@ -203,4 +203,10 @@ class SingleModel(object):
         self.loss = self.output_layer.loss
         self.error = self.output_layer.error
         self.params = self.model.params
+
+        # prepare L2_sqr
+        self.L2 = 0
+        for p in self.params:
+            self.L2 += (p**2).sum()
+        self.L2 = T.sqrt(self.L2) * 0.01
         return

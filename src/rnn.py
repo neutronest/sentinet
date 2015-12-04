@@ -116,31 +116,32 @@ class TRNN(object):
                        self.tb_y]
         return
 
-    def _recurrent(self, relation_pair, hlist_tm1):
+    def _recurrent(self, idx, h_tm1, r):
         """
         the relation pairs will begin with 0:-1
         -1 means that the root node has no parent node
         so that we must add one element that start with 1:0
         """
 
-        c = relations[0]
-        p = relations[1]
+        c = idx
+        p = r[idx]
 
         #h_t = T.nnet.sigmoid(T.dot(self.input_var[c], self.TW_input) + \
         #                     T.dot(hlist_tm1[p+1], self.TW_hidden) + \
         #                     self.tb_h)
 
         h_t = T.nnet.sigmoid(T.dot(self.input_var[c], self.TW_input) + \
-                             T.dot(hlist_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden], self.TW_hidden) + \
+                             T.dot(h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden], self.TW_hidden) + \
                              self.tb_h)
-        h_next = T.set_subtensor(hlist_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
+        h_next = T.set_subtensor(h_tm1[(c+1)*self.n_hidden:(c+2)*self.n_hidden], h_t)
         y = T.dot(h_t, self.TW_output) + self.tb_y
         #hlist_next = T.concatenate([hlist_tm1, h_t.dimshuffle('x', 0)])
         return h_next, y
 
     def build_network(self):
         [self.h, self.y], _ = theano.scan(fn=self._recurrent,
-                                          sequences=self.relation_pairs,
+                                          sequences=T.arange(self.relations.shape[0]),
+                                          non_sequences=self.relations,
                                           outputs_info=[self.th, None])
         return
 

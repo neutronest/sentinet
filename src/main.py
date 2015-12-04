@@ -197,7 +197,8 @@ def run_microblog_experimentV2(load_data,
        or model_name == "lstm_avg_model" \
        or model_name == "hlstm_s_model" \
        or model_name == "hlstm_fc_model" \
-       or model_name == "hlstm_fy_model":
+       or model_name == "hlstm_fy_model" \
+       or model_name == "lstm_trnn_model":
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
@@ -355,7 +356,7 @@ def run_microblog_experimentV2(load_data,
                                                           compute_error_fn,
                                                           "valid")
                     valid_check_list.append(loss_res)
-                    if len(valid_check_list) == 20:
+                    if len(valid_check_list) == 50:
                         min_loss = min(valid_check_list)
                         if early_stopping_val >= min_loss:
                             early_stopping_val = min_loss

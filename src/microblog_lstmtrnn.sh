@@ -1,11 +1,11 @@
 #!/bin/bash
 cmd="python main.py
     --experiment=microblog
-    --model_name=lstm_model
-    --level1_model_name=lstm_model
-    --level2_model_name=none
+    --model_name=lstm_trnn_model
+    --level1_model_name=slstm_model
+    --level2_model_name=trnn_model
     --dataset_name=microblog
-    --log_path=../logs/lstm_test.txt
+    --log_path=../logs/v1_lstmtrnn.txt
     --word_dim=100
     --level1_input=100
     --level1_hidden=100
