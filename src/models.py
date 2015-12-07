@@ -177,6 +177,7 @@ class SingleModel(object):
                                       n_input,
                                       n_hidden,
                                       n_output)
+
         self.h0 = self.model.h0
         self.c0 = self.model.c0
         # not used
