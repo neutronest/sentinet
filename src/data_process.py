@@ -207,6 +207,17 @@ def update_lookuptable(file_path,
     return words_table, lookup_table, wordid_acc
 
 
+
+def cosineSim(self, A_ids, B_ids):
+    """
+    cosine similarity calculate
+    """
+    sum_ab = 0.0
+    sum_a = 0.0
+    sum_b = 0.0
+
+    return
+
 def generate_feature(json_dict,
                      feature_name,
                      feature,
@@ -231,6 +242,9 @@ def generate_feature(json_dict,
         d_feature[1] = 1 if parent != -1 and \
                        len(set(feature).intersection(set(json_dict[grandpa][feature_name]))) > 0 \
                        else 0
+
+    elif edge_type == "cosine":
+
     else:
         print "foobar"
     return d_feature
@@ -345,6 +359,8 @@ def generate_threadsV2(file_path,
             d_emoji = generate_feature(content_dict[threadid], "emoji", emoji, parent, grandpa, "contain")
             d_hashtag = generate_feature(content_dict[threadid], "hashtag", hashtag, parent, grandpa, "contain")
             d_mention = generate_feature(content_dict[threadid], "mention", mention, parent, grandpa, "contain")
+            # similar text
+            d_similar = generate_feature(content_dict[threadid], "similar", words_ids, parent, grandpa, "cosine")
             d_t = d_author + d_emoji + d_hashtag + d_mention
             # applying data
             if data_x.get(threadid) == None:
