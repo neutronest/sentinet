@@ -261,6 +261,8 @@ def run_microblog_experimentV2(load_data,
         polarity_train_n = [0, 0, 0]
         early_stopping_val = 999
         valid_check_list = []
+        test_error_list = []
+        final_error = 0.
 
         logging.info("=== Begin to Train! ===")
         while epoch < n_epochs:
@@ -358,18 +360,10 @@ def run_microblog_experimentV2(load_data,
                                                           compute_error_fn,
                                                           "valid")
                     valid_check_list.append(loss_res)
-                    if len(valid_check_list) == 50:
-                        min_loss = min(valid_check_list)
-                        if early_stopping_val >= min_loss:
-                            early_stopping_val = min_loss
-                            valid_check_list = []
-                        else:
-                            logging.info("[=== early stopping! ===]")
-                            return
                     valid_idx += 1
                     """  TEST PROCESS """
                     logging.info("[TEST PROCESS]")
-                    check_process(test_idx,
+                    (_, test_error_res) = check_process(test_idx,
                                   model,
                                   test_x,
                                   test_y,
@@ -377,6 +371,22 @@ def run_microblog_experimentV2(load_data,
                                   compute_error_fn,
                                   "test")
                     test_idx += 1
+                    test_error_list.append(test_error_res)
+                    if len(valid_check_list) == 50:
+                        min_loss = min(valid_check_list)
+                        if early_stopping_val >= min_loss:
+                            early_stopping_val = min_loss
+                            res_id = valid_check_list.index(min_loss)
+                            final_error = test_error_list[res_id]
+                            valid_check_list = []
+                            test_error_list = []
+                            logging.info("[=== choosed valid loss: %f ===]"%(early_stopping_val))
+                            logging.info("[=== choosed test error: %f ===]"%(final_error))
+                        else:
+                            logging.info("[=== early stopping! ===]")
+                            logging.info("[=== final valid loss: %f ===]"%(early_stopping_val))
+                            logging.info("[=== final test error: %f ===]"%(final_error))
+                            return
     return
 
 if __name__ == "__main__":

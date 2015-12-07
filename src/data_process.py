@@ -242,9 +242,6 @@ def generate_feature(json_dict,
         d_feature[1] = 1 if parent != -1 and \
                        len(set(feature).intersection(set(json_dict[grandpa][feature_name]))) > 0 \
                        else 0
-
-    elif edge_type == "cosine":
-
     else:
         print "foobar"
     return d_feature
