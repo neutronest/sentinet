@@ -156,10 +156,13 @@ class SingleModel(object):
                  n_input,
                  n_hidden,
                  n_output,
-                 if_dropout="dropout"):
+                 if_dropout="dropout",
+                 word_dim=None,
+                 cnn_n_feature_maps=None,
+                 cnn_window_sizes=None):
         self.model_name = model_name
         self.input_var = input_var
-        self.lookup_table = lookup_table
+        self.lookup_table = lookup_table3
         self.n_input = n_input
         self.n_hidden = n_hidden
         self.n_output = n_output
@@ -178,6 +181,12 @@ class SingleModel(object):
                                       n_hidden,
                                       n_output)
 
+        if model_name == "cnn_model":
+            self.model = cnn.CNN(input_var,
+                                 lookup_table,
+                                 word_dim,
+                                 cnn_n_feature_maps,
+                                 cnn_window_sizes)
         self.h0 = self.model.h0
         self.c0 = self.model.c0
         # not used

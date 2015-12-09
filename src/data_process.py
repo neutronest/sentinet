@@ -9,6 +9,7 @@ import json
 import sys
 import config
 import copy
+import math
 sys.path.append("../microblog")
 from mvectorize import MVectorize
 from collections import OrderedDict
@@ -208,15 +209,19 @@ def update_lookuptable(file_path,
 
 
 
-def cosineSim(self, A_ids, B_ids):
+def cosine_sim(A_ids, B_ids):
     """
     cosine similarity calculate
     """
     sum_ab = 0.0
-    sum_a = 0.0
-    sum_b = 0.0
+    a_sqrt = 0.0
+    b_sqrt = 0.0
 
-    return
+    a_sqrt = math.sqrt(sum([i*i for i in A_ids]))
+    b_sqrt = math.sqrt(sum([i*i for i in B_ids]))
+    sum_ab = sum([ ai * bi for ai, bi in zip(A_ids, B_ids)])
+
+    return sum_ab / (a_sqrt * 1. * b_sqrt)
 
 def generate_feature(json_dict,
                      feature_name,
@@ -239,9 +244,27 @@ def generate_feature(json_dict,
         d_feature[0] = 1 if parent != -1 and \
                        len(set(feature).intersection(set(json_dict[parent][feature_name]))) > 0 \
                        else 0
-        d_feature[1] = 1 if parent != -1 and \
+        d_feature[1] = 1 if grandpa != -1 and \
                        len(set(feature).intersection(set(json_dict[grandpa][feature_name]))) > 0 \
                        else 0
+    elif edge_type == "similarity":
+        cur_word_id = feature
+        pa_word_id = json_dict[parent][feature_name]
+        grad_word_id = json_dict[grandpa][feature_name]
+
+        cur_word_fix_id = [1 if i in cur_word_id else 0 for i in xrange(33024)]
+        pa_word_fix_id = [1 if i in pa_word_id else 0 for i in xrange(33024)]
+        grad_word_fix_id = [1 if i in grad_word_id else 0 for i in xrange(33024)]
+
+        print cosine_sim(cur_word_fix_id, pa_word_fix_id)
+        print cosine_sim(cur_word_fix_id, grad_word_fix_id)
+        d_feature[0] = 1 if parent != -1 and \
+                       cosine_sim(cur_word_fix_id, pa_word_fix_id) > 0.1 \
+                       else 0
+        d_feature[1] = 1 if grandpa != -1 and \
+                       cosine_sim(cur_word_fix_id, grad_word_fix_id) > 0.1 \
+                       else 0
+
     else:
         print "foobar"
     return d_feature
@@ -313,6 +336,18 @@ def generate_threadsV2(file_path,
             mention = line_json['mention']
             hashtag = line_json['hashtag']
 
+            # prepare words_ids
+            words_ids = [words_table[word] for word in words \
+                         if words_table.get(word) != None]
+
+            if len(words_ids) == 0:
+                # none word in the weibo
+                # copy it's parent's content
+                words_ids = copy.deepcopy(data_x[threadid][0][parent])
+                # words_ids = [0]
+                NONE_WORD_NUM += 1
+
+
             if content_dict.get(threadid) != None:
 
                 content_dict[threadid].append({'docid': docid,
@@ -321,7 +356,8 @@ def generate_threadsV2(file_path,
                                                'emoji': emoji,
                                                'author': author,
                                                'mention': mention,
-                                               'hashtag': hashtag})
+                                               'hashtag': hashtag,
+                                               'wordsids': words_ids})
             else:
                 content_dict[threadid] = [{
                     'docid': docid,
@@ -330,19 +366,9 @@ def generate_threadsV2(file_path,
                     'emoji': emoji,
                     'author': author,
                     'mention': mention,
-                    'hashtag': hashtag
+                    'hashtag': hashtag,
+                    'wordsids': words_ids
                 }]
-            # prepare words_ids
-            words_ids = [words_table[word] for word in words \
-                         if words_table.get(word) != None]
-
-            if len(words_ids) == 0:
-                # none word in the weibo
-                # copy it's parent's content
-                #words_ids = copy.deepcopy(data_x[threadid][0][parent])
-                words_ids = [0]
-                NONE_WORD_NUM += 1
-
             # prepare features for RNN
             # polarity
             d_polarity = [0, 0]
@@ -357,8 +383,8 @@ def generate_threadsV2(file_path,
             d_hashtag = generate_feature(content_dict[threadid], "hashtag", hashtag, parent, grandpa, "contain")
             d_mention = generate_feature(content_dict[threadid], "mention", mention, parent, grandpa, "contain")
             # similar text
-            d_similar = generate_feature(content_dict[threadid], "similar", words_ids, parent, grandpa, "cosine")
-            d_t = d_author + d_emoji + d_hashtag + d_mention
+            d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
+            d_t = d_author + d_emoji + d_hashtag + d_mention + d_similar
             # applying data
             if data_x.get(threadid) == None:
                 # new thread
@@ -553,7 +579,7 @@ if __name__ == "__main__":
         yt_pred = np.asarray(np.zeros_like(yt),
                              dtype=theano.config.floatX)
 
-    """
+
     for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
         zip(train_x.items(), train_y.items()):
         # statistics
@@ -606,3 +632,4 @@ if __name__ == "__main__":
     print "[=== same polarity with root weibo statistics ===]"
     print root_same_polarity_acc * 1. / n_weibo
     print pa_same_polarity_acc * 1. / n_weibo
+    """

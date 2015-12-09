@@ -19,11 +19,11 @@ def train_process(model_name, gparams_fn, loss_fn, error_fn, data_x, data_y,
                   dt=None, yt=None, yt_pred=None, if_train=None):
 
     g = gparams_fn(data_x, data_y, mask, h0, c0, relations, th_init, tc_init,
-                   dt, yt, yt_pred, 1)
+                   dt, yt, yt_pred, if_train)
     [train_loss, y] = loss_fn(data_x, data_y, mask, h0, c0, relations, th_init,
-                              tc_init, dt, yt, yt_pred, 0)
+                              tc_init, dt, yt, yt_pred, if_train)
     [train_error, y] = error_fn(data_x, label_y, mask, h0, c0, relations,
-                                th_init, tc_init, dt, yt, yt_pred, 0)
+                                th_init, tc_init, dt, yt, yt_pred, if_train)
     return (g, train_loss, train_error, y)
 
 def check_compute(model_name,
@@ -54,7 +54,7 @@ def check_compute(model_name,
                                          dt,
                                          yt,
                                          yt_pred,
-                                         0)
+                                         if_train)
     [check_error, check_output] = error_fn(data_x,
                                            label_y,
                                            mask,
@@ -66,7 +66,7 @@ def check_compute(model_name,
                                            dt,
                                            yt,
                                            yt_pred,
-                                           0)
+                                           if_train)
 
     return (check_loss, check_error, check_output)
 
@@ -141,7 +141,7 @@ def check_process(check_idx,
                                                                 dt,
                                                                 yt,
                                                                 yt_pred,
-                                                                0)
+                                                                if_train)
         for p in check_output:
             polarity_n[p] += 1
         check_loss_sum += (check_loss / len(relations))
@@ -188,6 +188,27 @@ def run_microblog_experimentV2(load_data,
     logging.info("[the valid seqs size is %d]"%(n_valid))
     logging.info("[the test seqs size is %d]"%(n_test))
 
+
+    # DEFINE VARIABLE
+    logging.info("%s experiment began!]"%(model_name))
+    y_true_var = T.imatrix('y_true_var')
+    y_label_var = T.ivector('y_label_var')
+
+    cost_train_var = model.loss(y_true_var, model.y_drop_pred)
+    cost_var = model.loss(y_true_var, model.y_pred)
+    error_var = model.error(y_label_var, model.output)
+
+    # optimizer define
+    logging.info("[minibatch used]")
+    logging.info("[optimizer %s define!]"%(optimizer_method))
+    if optimizer_method == "sgd":
+        opt = optimizer.SGD(learning_rate=learning_rate)
+        opt.delta_pre_init(model.params)
+    if optimizer_method == "adadelta":
+        opt = optimizer.ADADELTA(model.params)
+
+    gparams_var_list = T.grad(cost_train_var, model.params)
+
     if model_name == "srnn_trnn_model" \
        or model_name ==  "sgru_tgru_model" \
        or model_name == "slstm_tlstm_model" \
@@ -200,7 +221,7 @@ def run_microblog_experimentV2(load_data,
        or model_name == "hlstm_fy_model" \
        or model_name == "lstm_trnn_model" \
        or model_name == "lstm_tgru_model":
-
+        """
         # DEFINE VARIABLE
         logging.info("%s experiment began!]"%(model_name))
         y_true_var = T.imatrix('y_true_var')
@@ -220,7 +241,7 @@ def run_microblog_experimentV2(load_data,
             opt = optimizer.ADADELTA(model.params)
 
         gparams_var_list = T.grad(cost_train_var, model.params)
-
+        """
 
         fn_loss_vars = [model.input_var, y_true_var, model.mask, model.h0,
                         model.c0, model.relations, model.th, model.tc, model.dt,
@@ -372,7 +393,7 @@ def run_microblog_experimentV2(load_data,
                                   "test")
                     test_idx += 1
                     test_error_list.append(test_error_res)
-                    if len(valid_check_list) == 50:
+                    if len(valid_check_list) == 30:
                         min_loss = min(valid_check_list)
                         if early_stopping_val >= min_loss:
                             early_stopping_val = min_loss
@@ -556,6 +577,7 @@ if __name__ == "__main__":
     if model_name == "lstm_model" or \
        model_name == "lstm_avg_model":
         run_model = models.SingleModel(model_name,
+                                       "rnn",
                                        x_var,
                                        lookup_table,
                                        level1_input,
