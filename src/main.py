@@ -141,7 +141,7 @@ def check_process(check_idx,
                                                                 dt,
                                                                 yt,
                                                                 yt_pred,
-                                                                if_train)
+                                                                0)
         for p in check_output:
             polarity_n[p] += 1
         check_loss_sum += (check_loss / len(relations))
