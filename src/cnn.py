@@ -5,15 +5,17 @@ import theano.tensor as T
 from theano.tensor.nnet import conv
 import numpy as np
 import utils
+import config
 
 class CNN(object):
 
     def __init__(self,
-                input_data,
-                 rng,
-                dim,
-                n_feature_maps,
-                window_sizes):
+                 input_var,
+                 lookup_table,
+                 dim,
+                 n_feature_maps,
+                 window_sizes,
+                 n_output):
         """
         Params:
         -------
@@ -33,15 +35,20 @@ class CNN(object):
 
 
         """
-        self.input_data = input_data
+        self.input_var = input_var
+        self.window_sizes = window_sizes
         #self.input_data = input_data.dimshuffle('x', 'x', 0, 1)
         self.dim = dim
         self.n_feature_maps = n_feature_maps
         self.window_sizes = window_sizes
-
+        self.lookup_table =  utils.sharedX(lookup_table,
+                                           dtype=theano.config.floatX,
+                                           name='W_emb')
+        self.n_output = n_output
         # params init
         self.params = []
         self.W_list = []
+        rng = np.random.RandomState(23455)
         for ws in window_sizes:
             # ws declare each window_size
             W_init = np.asarray(rng.uniform(low=-0.1,
@@ -57,26 +64,37 @@ class CNN(object):
         b_init = np.asarray(np.zeros((self.n_feature_maps * len(self.window_sizes),), dtype=theano.config.floatX))
         self.b = theano.shared(value=b_init)
         self.params.append(self.b)
+        self.W_output = utils.shared_uniform((self.n_feature_maps*len(self.window_sizes), self.n_output),
+                                             dtype=theano.config.floatX,
+                                             name='cnn_W_output')
+        self.by = utils.shared_zeros((self.n_output,),
+                                     dtype=theano.config.floatX,
+                                     name="cnn_by")
+        self.params += [self.W_output, self.by, self.lookup_table]
+        return
 
+    def _conv(self, word_vector):
+        #word_vector = utils.get_var_with_mask(word_vector, 0.)
+        word_matrix = word_vector.dimshuffle('x', 'x', 0, 1)
+        h = None
 
-        def _conv(word_vector):
-            word_vector = utils.get_var_with_mask(word_vector, 0.)
-            word_matrix = word_vector.dimshuffle('x', 'x', 0, 1)
-            h = None
+        for i in xrange(len(self.window_sizes)):
+            conv_out = conv.conv2d(input=word_matrix, filters=self.W_list[i])
+            max_out = T.max(conv_out, axis=2).flatten()
+            h = max_out if h == None else \
+                T.concatenate([h, max_out])
+        o = h + self.b
+        y = T.dot(o, self.W_output) + self.by
+        return y
 
-            for i in xrange(len(window_sizes)):
-                conv_out = conv.conv2d(input=word_matrix, filters=self.W_list[i])
-                max_out = T.max(conv_out, axis=2).flatten()
-                h = max_out if h == None else \
-                         T.concatenate([h, max_out])
-            o = h + self.b
-            return o
-
-
-        self.output, _ = theano.scan(fn=_conv,
-                                       sequences=self.input_data,
-                                       n_steps=self.input_data.shape[0],
-                                       outputs_info=None)
+    def build_network(self):
+        x_emb = self.lookup_table[self.input_var.flatten()].reshape([self.input_var.shape[0],
+                                                                     self.input_var.shape[1],
+                                                                     config.options['word_dim']])
+        self.y, _ = theano.scan(fn=self._conv,
+                                sequences=x_emb,
+                                n_steps=self.input_var.shape[0],
+                                outputs_info=None)
         #pdb.set_trace()
         return
 

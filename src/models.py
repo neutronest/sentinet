@@ -162,7 +162,7 @@ class SingleModel(object):
                  cnn_window_sizes=None):
         self.model_name = model_name
         self.input_var = input_var
-        self.lookup_table = lookup_table3
+        self.lookup_table = lookup_table
         self.n_input = n_input
         self.n_hidden = n_hidden
         self.n_output = n_output
@@ -186,9 +186,11 @@ class SingleModel(object):
                                  lookup_table,
                                  word_dim,
                                  cnn_n_feature_maps,
-                                 cnn_window_sizes)
-        self.h0 = self.model.h0
-        self.c0 = self.model.c0
+                                 cnn_window_sizes,
+                                 n_output)
+
+        self.h0 = getattr(self.model, 'h0', T.fvector('h0'))
+        self.c0 = getattr(self.model, 'c0', T.fvector('c0'))
         # not used
         self.th = T.fvector('th')
         self.tc = T.fvector('tc')
@@ -198,15 +200,16 @@ class SingleModel(object):
         self.if_train_var = T.scalar('if_train_var')
 
         self.relations = T.ivector('relations')
-        self.level1_hidden = self.model.n_hidden
-        self.level2_hidden = 1
+        if model_name != "cnn_model":
+            self.level1_hidden = self.model.n_hidden
+            self.level2_hidden = 1
+            self.mask = self.model.mask
         self.model.build_network()
         self.y = self.model.y
         self.output_layer = layer.OutputLayer(n_output,
                                               self.y,
                                               if_dropout)
 
-        self.mask = self.model.mask
         self.y_pred = self.output_layer.y_pred
         self.y_drop_pred = self.output_layer.y_drop_pred
         self.output = self.output_layer.output

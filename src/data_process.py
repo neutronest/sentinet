@@ -255,9 +255,6 @@ def generate_feature(json_dict,
         cur_word_fix_id = [1 if i in cur_word_id else 0 for i in xrange(33024)]
         pa_word_fix_id = [1 if i in pa_word_id else 0 for i in xrange(33024)]
         grad_word_fix_id = [1 if i in grad_word_id else 0 for i in xrange(33024)]
-
-        print cosine_sim(cur_word_fix_id, pa_word_fix_id)
-        print cosine_sim(cur_word_fix_id, grad_word_fix_id)
         d_feature[0] = 1 if parent != -1 and \
                        cosine_sim(cur_word_fix_id, pa_word_fix_id) > 0.1 \
                        else 0
@@ -383,8 +380,8 @@ def generate_threadsV2(file_path,
             d_hashtag = generate_feature(content_dict[threadid], "hashtag", hashtag, parent, grandpa, "contain")
             d_mention = generate_feature(content_dict[threadid], "mention", mention, parent, grandpa, "contain")
             # similar text
-            d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
-            d_t = d_author + d_emoji + d_hashtag + d_mention + d_similar
+            #d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
+            d_t = d_author + d_emoji + d_hashtag + d_mention# + d_similar
             # applying data
             if data_x.get(threadid) == None:
                 # new thread
