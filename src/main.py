@@ -577,7 +577,6 @@ if __name__ == "__main__":
     if model_name == "lstm_model" or \
        model_name == "lstm_avg_model":
         run_model = models.SingleModel(model_name,
-                                       "rnn",
                                        x_var,
                                        lookup_table,
                                        level1_input,
