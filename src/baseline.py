@@ -73,6 +73,12 @@ if __name__ == "__main__":
          "dataset_name=",
          "log_path=",
          "word_dim=",
+         "level1_model_name=",
+         "level2_model_name=",
+         "level1_input=",
+         "level1_hidden=",
+         "level2_input=",
+         "level2_hidden=",
          "cnn_n_feature_maps=",
          "cnn_window_sizes=",
          "n_output=",
@@ -106,6 +112,24 @@ if __name__ == "__main__":
 
         elif opt == "--word_dim":
             word_dim = int(arg)
+
+        elif opt == "--level1_model_name":
+            level1_model_name = arg
+
+        elif opt == "--level2_model_name":
+            level2_model_name = arg
+
+        elif opt == "--level1_input":
+            level1_input = arg
+
+        elif opt == "--level1_hidden":
+            level1_hidden = arg
+
+        elif opt == "--level2_input":
+            level2_input = arg
+
+        elif opt == "--level2_hidden":
+            level2_hidden = arg
 
         elif opt == "--cnn_n_feature_maps":
             # example of arg: 300 of str
@@ -163,16 +187,32 @@ if __name__ == "__main__":
     logging.info("loading microblog data now!")
     load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos, words_table)
     x_var =T.imatrix('x_var')
-    model = models.SingleModel(model_name,
-                               x_var,
-                               lookup_table,
-                               "none",
-                               "none",
-                               n_output,
-                               if_dropout,
-                               word_dim,
-                               cnn_n_feature_maps,
-                               cnn_window_sizes)
+    if model_name == "cnn_model":
+        model = models.SingleModel(model_name,
+                                   x_var,
+                                   lookup_table,
+                                   "none",
+                                   "none",
+                                   n_output,
+                                   if_dropout,
+                                   word_dim,
+                                   cnn_n_feature_maps,
+                                   cnn_window_sizes)
+    else:
+        model = models.Model(level1_model_name,
+                             level2_model_name,
+                             x_var,
+                             lookup_table,
+                             level1_input,
+                             level1_hidden,
+                             level2_input,
+                             level2_hidden,
+                             n_output,
+                             word_dim,
+                             cnn_n_feature_maps,
+                             cnn_window_sizes,
+                             if_dropout)
+        print "TODO: CNN-RNN model"
     logging.info("begin cnn method")
     # prepare data
     (train_x, train_y, valid_x, valid_y, test_x, test_y) = load_data

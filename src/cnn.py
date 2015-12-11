@@ -15,7 +15,8 @@ class CNN(object):
                  dim,
                  n_feature_maps,
                  window_sizes,
-                 n_output):
+                 n_output=None,
+                 if_output=False):
         """
         Params:
         -------
@@ -61,8 +62,9 @@ class CNN(object):
             W = theano.shared(value=W_init, name="cnn_"+str(ws))
             self.W_list.append(W)
             self.params.append(W)
-        b_init = np.asarray(np.zeros((self.n_feature_maps * len(self.window_sizes),), dtype=theano.config.floatX))
-        self.b = theano.shared(value=b_init)
+        b_init = np.asarray(np.zeros((self.n_feature_maps * len(self.window_sizes),),
+                                     dtype=theano.config.floatX))
+        self.b = theano.shared(value=b_init, name="cnn_b_init")
         self.params.append(self.b)
         self.W_output = utils.shared_uniform((self.n_feature_maps*len(self.window_sizes), self.n_output),
                                              dtype=theano.config.floatX,
@@ -70,7 +72,10 @@ class CNN(object):
         self.by = utils.shared_zeros((self.n_output,),
                                      dtype=theano.config.floatX,
                                      name="cnn_by")
-        self.params += [self.W_output, self.by, self.lookup_table]
+        if if_output:
+            self.params += [self.W_output, self.by, self.lookup_table]
+        else:
+            self.params += [self.lookup_table]
         return
 
     def _conv(self, word_vector):
@@ -85,15 +90,15 @@ class CNN(object):
                 T.concatenate([h, max_out])
         o = h + self.b
         y = T.dot(o, self.W_output) + self.by
-        return y
+        return y, o
 
     def build_network(self):
         x_emb = self.lookup_table[self.input_var.flatten()].reshape([self.input_var.shape[0],
                                                                      self.input_var.shape[1],
                                                                      config.options['word_dim']])
-        self.y, _ = theano.scan(fn=self._conv,
-                                sequences=x_emb,
-                                n_steps=self.input_var.shape[0],
+        [self.y, self.h], _ = theano.scan(fn=self._conv,
+                                          sequences=x_emb,
+                                          n_steps=self.input_var.shape[0],
                                 outputs_info=None)
         #pdb.set_trace()
         return

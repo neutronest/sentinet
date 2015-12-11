@@ -46,7 +46,7 @@ class Model(object):
         self.smodel = None
         self.tmodel = None
 
-        if self.level1_model_name == "srnn_model":
+        if self.level1_model_name == "srnn_Model":
             self.smodel = rnn.SRNN(input_var,
                                    lookup_table,
                                    self.level1_input,
@@ -72,6 +72,16 @@ class Model(object):
                                         lookup_table,
                                         self.level1_input,
                                         self.level1_hidden)
+        elif self.level1_model_name == "cnn_model":
+            self.smodel = cnn.CNN(input_var,
+                                  lookup_table,
+                                  word_dim,
+                                  n_feature_maps,
+                                  window_sizes,
+                                  n_output,
+                                  False)
+
+            # n_output never used
         else:
             print "none smodel"
         self.smodel.build_network()
@@ -121,9 +131,9 @@ class Model(object):
                                               self.tmodel.y,
                                               if_dropout)
         self.relations = self.tmodel.relations
-        self.mask = self.smodel.mask
-        #pdb.set_trace()
-        self.h0 = self.smodel.h0
+        if self.level1_model_name != "cnn_model":
+            self.mask = self.smodel.mask
+            self.h0 = self.smodel.h0
         self.th = self.tmodel.th
         self.c0  = getattr(self.smodel, 'c0', T.fmatrix('c0'))
         self.tc = getattr(self.tmodel, 'tc', T.fvector('tc'))
@@ -187,7 +197,8 @@ class SingleModel(object):
                                  word_dim,
                                  cnn_n_feature_maps,
                                  cnn_window_sizes,
-                                 n_output)
+                                 n_output,
+                                 True)
 
         self.h0 = getattr(self.model, 'h0', T.fvector('h0'))
         self.c0 = getattr(self.model, 'c0', T.fvector('c0'))
