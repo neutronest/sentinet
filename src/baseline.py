@@ -48,7 +48,8 @@ def check_process(check_idx,
 
         relations = np.asarray(check_item_x[3],
                                dtype=np.int32)
-        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1)))
+        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
+                                      dtype=theano.config.floatX))
         [check_loss, check_output] = loss_fn(input_x, input_y, 0, relations, th_init)
         [check_error, check_output] = error_fn(input_x, label_y, 0, relations, th_init)
 
@@ -304,7 +305,8 @@ if __name__ == "__main__":
                                  dtype=np.int32)
             relations = np.asarray(train_item_x[3],
                                    dtype=np.int32)
-            th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1)))
+            th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
+                                          dtype=theano.config.floatX))
             g = compute_gparams_fn(input_x, input_y, 1, th_init, relations)
             [train_loss, y] = train_loss_fn(input_x, input_y, 1, th_init, relations)
             [train_error, y] = compute_error_fn(input_x, label_y, 1, th_init, relations)
