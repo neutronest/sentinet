@@ -45,8 +45,13 @@ def check_process(check_idx,
                              dtype=np.int32)
         label_y = np.asarray(check_item_y,
                              dtype=np.int32)
-        [check_loss, check_output] = loss_fn(input_x, input_y, 0)
-        [check_error, check_output] = error_fn(input_x, label_y, 0)
+
+        relations = np.asarray(check_item_x[3],
+                               dtype=np.int32)
+        th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1)))
+        [check_loss, check_output] = loss_fn(input_x, input_y, 0, relations, th_init)
+        [check_error, check_output] = error_fn(input_x, label_y, 0, relations, th_init)
+
         for p in check_output:
             polarity_n[p] += 1
         check_loss_sum += (check_loss / len(label_y))
@@ -243,8 +248,10 @@ if __name__ == "__main__":
         opt = optimizer.ADADELTA(model.params)
 
     gparams_var_list = T.grad(cost_train_var, model.params)
-    fn_loss_vars = [model.input_var, y_true_var, model.if_train_var]
-    fn_error_vars = [model.input_var, y_label_var, model.if_train_var]
+
+    fn_loss_vars = [model.input_var, y_true_var, model.if_train_var, model.th, model.relations]
+    fn_error_vars = [model.input_var, y_label_var, model.if_train_var, model.th, model.relations]
+
     compute_gparams_fn = theano.function(inputs=fn_loss_vars,
                                              outputs=gparams_var_list,
                                              on_unused_input='ignore')
@@ -295,9 +302,12 @@ if __name__ == "__main__":
 
             label_y = np.asarray(train_item_y,
                                  dtype=np.int32)
+            relations = np.asarray(train_item_x[3],
+                                   dtype=np.int32)
+            th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1)))
             g = compute_gparams_fn(input_x, input_y, 1)
-            [train_loss, y] = train_loss_fn(input_x, input_y, 1)
-            [train_error, y] = compute_error_fn(input_x, label_y, 1)
+            [train_loss, y] = train_loss_fn(input_x, input_y, 1, th_init, relations)
+            [train_error, y] = compute_error_fn(input_x, label_y, 1, th_init, relations)
             opt.gparams_update(g)
             train_loss /= len(label_y)
             train_loss_sum += train_loss
