@@ -120,16 +120,16 @@ if __name__ == "__main__":
             level2_model_name = arg
 
         elif opt == "--level1_input":
-            level1_input = arg
+            level1_input = int(arg)
 
         elif opt == "--level1_hidden":
-            level1_hidden = arg
+            level1_hidden = int(arg)
 
         elif opt == "--level2_input":
-            level2_input = arg
+            level2_input = int(arg)
 
         elif opt == "--level2_hidden":
-            level2_hidden = arg
+            level2_hidden = int(arg)
 
         elif opt == "--cnn_n_feature_maps":
             # example of arg: 300 of str
