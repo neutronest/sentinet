@@ -80,6 +80,7 @@ class Model(object):
                                   window_sizes,
                                   n_output,
                                   False)
+            self.level2_input = len(self.window_sizes)*n_feature_maps
 
             # n_output never used
         else:
