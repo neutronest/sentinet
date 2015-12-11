@@ -17,7 +17,6 @@ cmd="python baseline.py
     --if_dropout=false
     --optimizer_method=adadelta
     --learning_rate=1
-    --batch_type=minibatch
     --batch_size=10
     --n_epochs=100
     --train_pos=0@1@2
