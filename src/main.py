@@ -145,8 +145,7 @@ def check_process(check_idx,
                                                                 0)
         for p in check_output:
             polarity_n[p] += 1
-
-        output_res += check_output
+        output_res += check_output.tolist()
         real_ys += check_item_y
         real_ys.append()
         check_loss_sum += (check_loss / len(relations))
