@@ -85,7 +85,7 @@ def check_process(check_idx,
     check_loss_res = 0.
     check_error_sum = 0.
     check_error_res = 0.
-
+    output_res = []
     polarity_n = [0, 0, 0]
 
     sen_num = 0.
@@ -144,6 +144,8 @@ def check_process(check_idx,
                                                                 0)
         for p in check_output:
             polarity_n[p] += 1
+
+        output_res.append(check_output)
         check_loss_sum += (check_loss / len(relations))
         check_num += 1
         check_error_sum += sum([i for i in check_error if i == 1])

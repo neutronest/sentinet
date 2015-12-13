@@ -43,6 +43,7 @@ def check_process(check_idx,
 
         input_y = np.asarray([ [1 if i == y else 0 for i in xrange(3)]  for y in check_item_y],
                              dtype=np.int32)
+
         label_y = np.asarray(check_item_y,
                              dtype=np.int32)
 
