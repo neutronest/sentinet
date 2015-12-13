@@ -337,11 +337,11 @@ def generate_threadsV2(file_path,
             words_ids = [words_table[word] for word in words \
                          if words_table.get(word) != None]
 
-            if len(words_ids) == 0:
+            if len(words_ids) < 6:
                 # none word in the weibo
                 # copy it's parent's content
-                words_ids = copy.deepcopy(data_x[threadid][0][parent])
-                # words_ids = [0]
+                #words_ids = copy.deepcopy(data_x[threadid][0][parent])
+                words_ids += [0] * (6 - len(words_ids))
                 NONE_WORD_NUM += 1
 
 
@@ -380,8 +380,8 @@ def generate_threadsV2(file_path,
             d_hashtag = generate_feature(content_dict[threadid], "hashtag", hashtag, parent, grandpa, "contain")
             d_mention = generate_feature(content_dict[threadid], "mention", mention, parent, grandpa, "contain")
             # similar text
-            d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
-            d_t = d_author + d_emoji + d_hashtag + d_mention + d_similar
+            #d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
+            d_t = d_author + d_emoji + d_hashtag + d_mention# + d_similar
             # applying data
             if data_x.get(threadid) == None:
                 # new thread
