@@ -332,6 +332,7 @@ def generate_threadsV2(file_path,
             author = line_json['username']
             mention = line_json['mention']
             hashtag = line_json['hashtag']
+            text = line_json['text']
 
             # prepare words_ids
             words_ids = [words_table[word] for word in words \
@@ -391,7 +392,7 @@ def generate_threadsV2(file_path,
                 # in relation seq, add empty node as guard node
                 relation_seq = [0]
                 mask = [1] * len(words_ids)
-                data_x[threadid] = [[words_ids], max_len, [mask],  relation_seq, [d_t]]
+                data_x[threadid] = [[words_ids], max_len, [mask],  relation_seq, [d_t], [text]]
             else:
                 data_x[threadid][0].append(words_ids)
                 max_len = len(words_ids) if max_len < len(words_ids) else max_len
@@ -400,6 +401,7 @@ def generate_threadsV2(file_path,
                 data_x[threadid][2].append(mask)
                 data_x[threadid][3].append(parent)
                 data_x[threadid][4].append(d_t)
+                data_x[threadid][5].append(text)
             if data_y.get(threadid) == None:
                 data_y[threadid] = [label]
             else:
@@ -489,6 +491,7 @@ def load_microblogdata(train_indicators,
     print "short sens find: %d"%(SHORT_SENS_FIND)
     print "less word num: %d"%(LESS_WORD_NUM)
     print "none word num: %d"%(NONE_WORD_NUM)
+
     return (train_x, train_y, valid_x, valid_y, test_x, test_y)
 
 
@@ -527,6 +530,53 @@ def train_sen_flatten(thread_data):
     return sens
 
 
+def get_pos_neg_words():
+    """
+    """
+    pos_words = []
+    neg_words = []
+    with open("../dict/pos_words.txt", "r") as pos_ob, open("../dict/neg_words.txt", "r") as neg_ob:
+        for pos_line, neg_line in zip(pos_ob, neg_ob):
+            pos_word = pos_line.strip().decode("utf-8")
+            neg_word = neg_line.strip().decode("utf-8")
+            pos_words.append(pos_word)
+            neg_words.append(neg_word)
+    pos_ob.close()
+    neg_ob.close()
+
+    return pos_words, neg_words
+
+
+def generate_diffdata(test_x, test_y):
+    """
+    revdata is the data that polarity token and label is different
+    """
+    pos_words, neg_words = get_pos_neg_words()
+    revdata = []
+    idx = 0
+    for (tx, item_x), (tx, item_y) in zip(test_x.items(), test_y.items()):
+
+        texts = item_x[5]
+        ys = item_y
+        for i in xrange(len(texts)):
+            pos_cnt = sum([1 for w in pos_words if w in texts[i]])
+            neg_cnt = sum([1 for w in neg_words if w in texts[i]])
+
+            if (pos_cnt > neg_cnt and ys[i] == 0) or \
+               (pos_cnt < neg_cnt and ys[i] == 2):
+                revdata.append({"idx": idx,
+                                "text": texts[i],
+                                "label": ys[i]})
+                print idx
+                idx += 1
+    return revdata
+
+
+
+
+
+
+
 if __name__ == "__main__":
 
     root_same_polarity_res = 0.
@@ -539,6 +589,7 @@ if __name__ == "__main__":
     words_table, lookup_table, wordid_acc = build_lookuptable()
     (train_x, train_y, valid_x, valid_y, test_x, test_y) \
         = load_microblogdata([0,1,2], 3, 4, words_table)
+    revdata = generate_diffdata(test_x, test_y)
     """
     for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
         zip(train_x.items(), train_y.items()):

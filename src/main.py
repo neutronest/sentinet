@@ -86,6 +86,7 @@ def check_process(check_idx,
     check_error_sum = 0.
     check_error_res = 0.
     output_res = []
+    real_ys = []
     polarity_n = [0, 0, 0]
 
     sen_num = 0.
@@ -145,7 +146,9 @@ def check_process(check_idx,
         for p in check_output:
             polarity_n[p] += 1
 
-        output_res.append(check_output)
+        output_res += check_output
+        real_ys += check_item_y
+        real_ys.append()
         check_loss_sum += (check_loss / len(relations))
         check_num += 1
         check_error_sum += sum([i for i in check_error if i == 1])
@@ -160,7 +163,8 @@ def check_process(check_idx,
     logging.info("valid pred polarity distribute: %d %d %d"%(polarity_n[0],
                                                            polarity_n[1],
                                                            polarity_n[2]))
-    return (check_loss_res, check_error_sum)
+    logging.info()
+    return (check_loss_res, check_error_sum, output_res, real_ys)
 
 """
 ======================= MICROBLOG EXPERIMENT ===========
@@ -180,7 +184,7 @@ def run_microblog_experimentV2(load_data,
     """
     # prepare data
     (train_x, train_y, valid_x, valid_y, test_x, test_y) = load_data
-
+    revdata = data_process.generate_diffdata(test_x, test_y)
 
     n_train = len(train_x)
     n_valid = len(valid_x)
@@ -286,6 +290,8 @@ def run_microblog_experimentV2(load_data,
         valid_check_list = []
         test_error_list = []
         final_error = 0.
+        final_output = 0.
+        final_diff = 0.
 
         logging.info("=== Begin to Train! ===")
         while epoch < n_epochs:
@@ -375,7 +381,7 @@ def run_microblog_experimentV2(load_data,
                     # valid process
                     print "bagan to valid %d"%(valid_idx)
                     logging.info("[VALID PROCESS]")
-                    (loss_res, error_res) = check_process(valid_idx,
+                    (loss_res, error_res, _, _) = check_process(valid_idx,
                                                           model,
                                                           valid_x,
                                                           valid_y,
@@ -386,7 +392,7 @@ def run_microblog_experimentV2(load_data,
                     valid_idx += 1
                     """  TEST PROCESS """
                     logging.info("[TEST PROCESS]")
-                    (_, test_error_res) = check_process(test_idx,
+                    (_, test_error_res, output_res, real_ys) = check_process(test_idx,
                                   model,
                                   test_x,
                                   test_y,
@@ -405,10 +411,24 @@ def run_microblog_experimentV2(load_data,
                             test_error_list = []
                             logging.info("[=== choosed valid loss: %f ===]"%(early_stopping_val))
                             logging.info("[=== choosed test error: %f ===]"%(final_error))
+
+                            # statistic diff error
+                            diff_rate = 0.
+                            for diff in revdata:
+                                idx = diff['idx']
+                                if output_res[idx] != real_ys[idx]:
+                                    diff_rate += 1
+                            diff_rate /= len(real_ys)
+                            final_diff = diff_rate
+                            final_output = output_res
+                            logging.info("[=== choosed diff res: %f ===]"%(final_diff))
                         else:
                             logging.info("[=== early stopping! ===]")
                             logging.info("[=== final valid loss: %f ===]"%(early_stopping_val))
                             logging.info("[=== final test error: %f ===]"%(final_error))
+                            logging.info("[=== choosed diff res: %f ===]"%(final_diff))
+                            logging.info(final_output)
+
                             return
     return
 
@@ -561,6 +581,7 @@ if __name__ == "__main__":
     elif dataset_name == "microblog":
         logging.info("loading microblog data now!")
         load_data = data_process.load_microblogdata(train_pos, valid_pos, test_pos, words_table)
+
         x_var =T.imatrix('x_var')
         # get lookup table
 
