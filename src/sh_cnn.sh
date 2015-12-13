@@ -1,7 +1,7 @@
 #!/bin/bash
 cmd_1="python baseline.py
     --experiment=microblog
-    --model_name=cnn_rnn_model
+    --model_name=cnn_model
     --level1_model_name=cnn_model
     --level2_model_name=trnn_model
     --dataset_name=microblog
@@ -26,7 +26,7 @@ cmd_1="python baseline.py
 
 cmd_2="python baseline.py
     --experiment=microblog
-    --model_name=cnn_rnn_model
+    --model_name=cnn_model
     --level1_model_name=cnn_model
     --level2_model_name=trnn_model
     --dataset_name=microblog
