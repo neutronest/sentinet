@@ -47,7 +47,7 @@ cmd_2="python baseline.py
     --train_pos=0@1@2
     --valid_pos=3
     --test_pos=4
-    --valid_frequency=200"
+    --valid_frequency=40"
 
 THEANO_FLAGS="mode=FAST_RUN,floatX=float32" $cmd_1 &
 

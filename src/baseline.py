@@ -51,8 +51,8 @@ def check_process(check_idx,
                                dtype=np.int32)
         th_init = np.asarray(np.zeros(model.level2_hidden*(len(relations)+1),
                                       dtype=theano.config.floatX))
-        [check_loss, check_output] = loss_fn(input_x, input_y, 0, relations, th_init)
-        [check_error, check_output] = error_fn(input_x, label_y, 0, relations, th_init)
+        [check_loss, check_output] = loss_fn(input_x, input_y, 0, th_init, relations)
+        [check_error, check_output] = error_fn(input_x, label_y, 0,th_init,  relations)
 
         for p in check_output:
             polarity_n[p] += 1
