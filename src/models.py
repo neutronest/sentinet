@@ -201,6 +201,9 @@ class SingleModel(object):
                                  n_output,
                                  True)
 
+        self.level2_hidden = getattr(self.model, "level2_hidden", 100)
+        self.relations = getattr(self.model, 'relations', T.fvector('relations'))
+        self.th = getattr(self.model, 'th', T.fvector('th'))
         self.h0 = getattr(self.model, 'h0', T.fvector('h0'))
         self.c0 = getattr(self.model, 'c0', T.fvector('c0'))
         # not used
