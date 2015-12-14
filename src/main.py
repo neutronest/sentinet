@@ -415,7 +415,7 @@ def run_microblog_experimentV2(load_data,
                                 idx = diff['idx']
                                 if output_res[idx] != real_ys[idx]:
                                     diff_rate += 1
-                            diff_rate /= len(real_ys)
+                            diff_rate /= len(revdata)
                             final_diff = diff_rate
                             final_output = output_res
                             logging.info("[=== choosed diff res: %f ===]"%(final_diff))
