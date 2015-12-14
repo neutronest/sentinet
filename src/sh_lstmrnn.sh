@@ -8,7 +8,7 @@ do
         do
             cmd="python main.py
     --experiment=microblog
-    --model_name=slstm_tlstm_model
+    --model_name=slstm_trnn_model
     --level1_model_name=slstm_model
     --level2_model_name=trnn_model
     --dataset_name=microblog
