@@ -554,6 +554,7 @@ def generate_diffdata(test_x, test_y):
     pos_words, neg_words = get_pos_neg_words()
     revdata = []
     idx = 0
+    acc_idx = 0
     for (tx, item_x), (tx, item_y) in zip(test_x.items(), test_y.items()):
 
         texts = item_x[5]
@@ -564,18 +565,13 @@ def generate_diffdata(test_x, test_y):
 
             if (pos_cnt > neg_cnt and ys[i] == 0) or \
                (pos_cnt < neg_cnt and ys[i] == 2):
-                revdata.append({"idx": idx,
+                revdata.append({"idx": acc_idx + i,
                                 "text": texts[i],
                                 "label": ys[i]})
                 print idx
                 idx += 1
+        acc_idx += len(texts)
     return revdata
-
-
-
-
-
-
 
 if __name__ == "__main__":
 
@@ -590,6 +586,7 @@ if __name__ == "__main__":
     (train_x, train_y, valid_x, valid_y, test_x, test_y) \
         = load_microblogdata([0,1,2], 3, 4, words_table)
     revdata = generate_diffdata(test_x, test_y)
+    pdb.set_trace()
     """
     for (train_threadid_x, train_item_x), (train_threadid_y, train_item_y) in \
         zip(train_x.items(), train_y.items()):
