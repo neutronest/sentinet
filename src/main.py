@@ -161,7 +161,6 @@ def check_process(check_idx,
     logging.info("valid pred polarity distribute: %d %d %d"%(polarity_n[0],
                                                            polarity_n[1],
                                                            polarity_n[2]))
-    logging.info()
     return (check_loss_res, check_error_sum, output_res, real_ys)
 
 """
