@@ -859,6 +859,11 @@ class TLSTM_fc(TLSTM):
                                            dtype=theano.config.floatX,
                                            name="TLSTM_D_v")
         """
+
+        self.W_h0 = utils.shared_orthogonal((n_hidden, n_hidden),
+                                            dtype=theano.config.floatX,
+                                            name="TLSTM_W_h0")
+
         self.b_v = utils.shared_zeros((config.options['dfeature_len'],),
                                       dtype=theano.config.floatX,
                                       name='TLSTM_b_v')
@@ -867,7 +872,7 @@ class TLSTM_fc(TLSTM):
                                               n_hidden),
                                             dtype=theano.config.floatX,
                                             name='TLSTM_W_dc')
-        self.params += [self.W_v, self.U_v, self.b_v, self.W_dc]
+        self.params += [self.W_v, self.U_v, self.b_v, self.W_dc, self.W_h0]
         return
 
     def _recurrent(self, idx, h_tm1, c_tm1, r):
@@ -875,9 +880,10 @@ class TLSTM_fc(TLSTM):
         c = idx
         p = r[idx]
         x_t = self.input_var[c]
+        h_root = h_tm1[self.n_hidden:2*self.n_hidden]
         h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
         c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
-        d_p = self.dt[c]
+        d_t = self.dt[c]
         d_tm1 = self.dt[p]
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
@@ -889,17 +895,19 @@ class TLSTM_fc(TLSTM):
         # c candiate
         c_c = T.tanh(T.dot(x_t, self.W_c) + \
                      T.dot(h_p, self.U_c) + \
+                     T.dot(h_root * h_p, self.W_h0) + \
                      self.b_c)
 
         v_t = T.nnet.sigmoid(T.dot(x_t, self.W_v) + \
                              T.dot(h_p, self.U_v) + \
                              self.b_v)
 
-        dc_t = (1 - v_t) * d_p + v_t * d_tm1
+        dc_t = (1 - v_t) * d_t + v_t * d_tm1
 
         c_t = i_t * c_c + f_t * c_p + T.tanh(T.dot(dc_t, self.W_dc))
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_p, self.U_o) + \
+                             T.dot(h_root * h_p, self.W_h0) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
         y_t = T.dot(h_t, self.TW_output) + self.b_y

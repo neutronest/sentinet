@@ -1,29 +1,29 @@
 #!/bin/bash
 cmd="python main.py
     --experiment=microblog
-    --model_name=srnn_trnn_model
-    --level1_model_name=srnn_model
-    --level2_model_name=trnn_model
+    --model_name=hlstm_fc_model
+    --level1_model_name=slstm_model
+    --level2_model_name=tlstm_fc_model
     --dataset_name=microblog
-    --log_path=../logs/weibo_hrnn_gpu_1.txt
-    --word_dim=64
-    --level1_input=64
+    --log_path=../logs/HLSTM-f/hlstm_fc.txt
+    --word_dim=100
+    --level1_input=100
     --level1_hidden=100
     --level2_input=100
     --level2_hidden=100
     --n_output=3
     --cnn_n_feature_maps=100
     --cnn_window_sizes=2@3@4
-    --if_dropout=dropout
+    --if_dropout=false
     --optimizer_method=adadelta
-    --learning_rate=0.1
+    --learning_rate=1
     --batch_type=minibatch
     --batch_size=10
-    --n_epochs=100
+    --n_epochs=40
     --train_pos=0@1@2
     --valid_pos=3
     --test_pos=4
-    --valid_frequency=1000"
+    --valid_frequency=200"
 
 if [ $# -eq 0 ]; then
     THEANO_FLAGS="mode=FAST_RUN,floatX=float32" $cmd
