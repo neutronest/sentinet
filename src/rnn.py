@@ -701,8 +701,11 @@ class TLSTM_f(TLSTM):
         self.D_c = utils.shared_orthogonal((config.options['dfeature_len'], n_hidden),
                                              dtype=theano.config.floatX,
                                              name='TLSTMf_D_c')
+        self.W_h0 = utils.shared_orthogonal((n_hidden, n_hidden),
+                                            dtype=theano.config.floatX,
+                                            name='TLSTM_W_h0')
         self.dt = T.fmatrix('dt')
-        self.params += [self.D_i, self.D_f, self.D_o, self.D_c]
+        self.params += [self.D_i, self.D_f, self.D_o, self.D_c, self.W_h0]
         return
 
     def _recurrent(self, idx, h_tm1, c_tm1, r):
@@ -711,27 +714,31 @@ class TLSTM_f(TLSTM):
         c = idx
         p = r[idx]
         x_t = self.input_var[c]
+        h_root = h_tm1[self.n_hidden:2*self.n_hidden]
         h_p = h_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
         c_p = c_tm1[(p+1)*self.n_hidden:(p+2)*self.n_hidden]
-        d_p = self.dt[c]
+        d_t = self.dt[c]
 
         i_t = T.nnet.sigmoid(T.dot(x_t, self.W_i) + \
                              T.dot(h_p, self.U_i) + \
-                             T.dot(d_p, self.D_i) + \
+                             #T.dot(d_p, self.D_i) + \
+                             #T.dot(h_root * h_p, self.W_h0) + \
                              self.b_i)
         f_t = T.nnet.sigmoid(T.dot(x_t, self.W_f) + \
                              T.dot(h_p, self.U_f) + \
-                             T.dot(d_p, self.D_f) + \
+                             #T.dot(d_p, self.D_f) + \
                              self.b_f)
         # c candiate
         c_c = T.tanh(T.dot(x_t, self.W_c) + \
                      T.dot(h_p, self.U_c) + \
-                     T.dot(d_p, self.D_c) + \
+                     T.dot(d_t, self.D_c) + \
+                     T.dot(h_root * h_p, self.W_h0) + \
                      self.b_c)
         c_t = i_t * c_c + f_t * c_p
         o_t = T.nnet.sigmoid(T.dot(x_t, self.W_o) + \
                              T.dot(h_p, self.U_o) + \
-                             T.dot(d_p, self.D_o) + \
+                             T.dot(d_t, self.D_o) + \
+                             T.dot(h_root * h_p, self.W_h0) + \
                              self.b_o)
         h_t = o_t * T.tanh(c_t)
         y_t = T.dot(h_t, self.TW_output) + self.b_y
@@ -909,7 +916,8 @@ class TLSTM_fcy(TLSTM_fc):
                  n_input,
                  n_hidden,
                  n_output):
-        TLSTM_fc.__init__(input_var,
+        TLSTM_fc.__init__(self,
+                          input_var,
                           n_input,
                           n_hidden,
                           n_output)

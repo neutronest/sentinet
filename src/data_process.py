@@ -381,8 +381,8 @@ def generate_threadsV2(file_path,
             d_hashtag = generate_feature(content_dict[threadid], "hashtag", hashtag, parent, grandpa, "contain")
             d_mention = generate_feature(content_dict[threadid], "mention", mention, parent, grandpa, "contain")
             # similar text
-            #d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
-            d_t = d_author + d_emoji + d_hashtag + d_mention# + d_similar
+            d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
+            d_t = d_author + d_emoji + d_hashtag + d_mention + d_similar
             # applying data
             if data_x.get(threadid) == None:
                 # new thread
