@@ -705,7 +705,7 @@ class TLSTM_f(TLSTM):
                                             dtype=theano.config.floatX,
                                             name='TLSTM_W_h0')
         self.dt = T.fmatrix('dt')
-        self.params += [self.D_i, self.D_f, self.D_o, self.D_c, self.W_h0]
+        self.params += [self.D_o, self.D_c, self.W_h0]
         return
 
     def _recurrent(self, idx, h_tm1, c_tm1, r):
