@@ -238,3 +238,39 @@ class SingleModel(object):
             self.L2 += (p**2).sum()
         self.L2 = T.sqrt(self.L2) * 0.01
         return
+
+class SSModel(object):
+    """
+    two level sequence model
+    """
+    def __init__(self,
+                 model_name,
+                 level1_model_name,
+                 level2_model_name,
+                 input_var,
+                 lookup_table,
+                 level1_input,
+                 level1_hidden,
+                 level2_input,
+                 level2_hidden,
+                 n_output,
+                 if_dropout="dropout",
+                 word_dim=None,
+                 cnn_n_feature_maps=None,
+                 cnn_window_sizes=None):
+        """
+        """
+        self.model_name = model_name
+        self.input_var = input_var
+        self.lookup_table = lookup_table
+        self.n_input = n_input
+        self.n_hidden = n_hidden
+        self.n_ouput = n_output
+        self.if_dropout = if_dropout
+        self.word_dim = word_dim
+        self.cnn_n_feature_maps = cnn_n_feature_maps
+        self.cnn_window_sizes = cnn_window_sizes
+
+
+
+        return

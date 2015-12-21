@@ -381,8 +381,8 @@ def generate_threadsV2(file_path,
             d_hashtag = generate_feature(content_dict[threadid], "hashtag", hashtag, parent, grandpa, "contain")
             d_mention = generate_feature(content_dict[threadid], "mention", mention, parent, grandpa, "contain")
             # similar text
-            d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
-            d_t = d_author + d_emoji + d_hashtag + d_mention + d_similar
+            #d_similar = generate_feature(content_dict[threadid], "wordsids", words_ids, parent, grandpa, "similarity")
+            d_t = d_author + d_emoji + d_hashtag + d_mention #+ d_similar
             # applying data
             if data_x.get(threadid) == None:
                 # new thread
@@ -535,7 +535,7 @@ def get_pos_neg_words():
     """
     pos_words = []
     neg_words = []
-    with open("../dict/pos_words.txt", "r") as pos_ob, open("../dict/neg_words.txt", "r") as neg_ob:
+    with open("../dict/pos_wordsV2.txt", "r") as pos_ob, open("../dict/neg_wordsV2.txt", "r") as neg_ob:
         for pos_line, neg_line in zip(pos_ob, neg_ob):
             pos_word = pos_line.strip().decode("utf-8")
             neg_word = neg_line.strip().decode("utf-8")
@@ -568,10 +568,31 @@ def generate_diffdata(test_x, test_y):
                 revdata.append({"idx": acc_idx + i,
                                 "text": texts[i],
                                 "label": ys[i]})
-                print idx
-                idx += 1
         acc_idx += len(texts)
     return revdata
+
+def generate_testinfo(test_x, test_y):
+    """
+    """
+    testinfo = []
+    for (tx, item_x), (tx, item_y) in zip(test_x.items(), test_y.items()):
+        texts = item_x[5]
+        ys = item_y
+        for t,y in zip(texts, ys):
+            testinfo.append({"text":t, "label":y})
+    return testinfo
+
+
+
+"""
+=============================== twt dataset process
+"""
+
+def twt_build_lookup_table():
+    """
+    """
+
+
 
 if __name__ == "__main__":
 
