@@ -30,6 +30,7 @@ class MVectorize(object):
         self.words_doc = None
         self.tfidf = None
         self.words_model = None
+        self.google_model = None
         return
 
     def gen_words(self, filepath):
@@ -91,6 +92,12 @@ class MVectorize(object):
         print "[---generate word vectors model!---]"
         self.words_model = Word2Vec(all_words_doc, size=config.options['word_dim'], window=10, min_count=1, workers=4)
         print "[--- word embedding model Done! ---]"
+        return
+
+    def gen_google_vector(self, google_file):
+        """
+        """
+        self.google_model = Word2Vec.load_word2vec_format(google_file, binary=True)
         return
 
     def gen_words_doc(self, file_path):

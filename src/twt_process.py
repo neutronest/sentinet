@@ -67,13 +67,16 @@ def generate_twt(words_table, file_path):
     with open(file_path, "r") as file_ob:
         for line in file_ob:
             # new
-            if line == "\n" and len(twt_thread) != 0:
+            if line == "\n" and len(twt_thread['label']) != 0:
                 twts.append(twt_thread)
                 twt_thread =  {"username":[],
                                "mask": [],
                                "wordid": [],
                                "label": [],
                                "max_len": 0}
+                continue
+            if line == "\n":
+                continue
 
             line_arr = line.strip().split("\t")
             thread_id = line_arr[0]
@@ -84,7 +87,7 @@ def generate_twt(words_table, file_path):
             words_ids = [words_table[word] for word in words \
                          if words_table.get(word) != None]
             if len(words_ids) < config.options['min_word_one_sen']:
-                words_ids.append([0] * (config.options['min_word_one_sen'-len(words_ids)]))
+                words_ids += [0] * (config.options['min_word_one_sen'] - len(words_ids))
 
             mask = [1] * len(words_ids)
             twt_thread['username'].append(username)
